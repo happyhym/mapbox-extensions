@@ -58,6 +58,9 @@ export class EyeControl implements mapboxgl.IControl {
             attributionControl: false,
             preserveDrawingBuffer: true
         });
+        
+        //获取或设置光标：default、pointer、auto、crosshair、move、text、help、wait
+        overviewMap.getCanvas().style.cursor = "default";
 
         overviewMap.on('load', () => {
             overviewMap.addSource(this.overviewBoxSourceId, {
@@ -85,7 +88,7 @@ export class EyeControl implements mapboxgl.IControl {
         function overviewBox() {
             var sw = map.getBounds().getSouthWest();
             var ne = map.getBounds().getNorthEast();
-            (overviewMap.getSource(that.overviewBoxSourceId) as mapboxgl.GeoJSONSource).setData({
+            (overviewMap.getSource(that.overviewBoxSourceId) as mapboxgl.GeoJSONSource)?.setData({
                 type: 'Feature',
                 geometry: {
                     type: 'Polygon',

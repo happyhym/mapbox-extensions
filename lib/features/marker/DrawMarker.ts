@@ -1,9 +1,14 @@
 import mapboxgl from "mapbox-gl";
 import { creator } from "wheater";
 import { MarkerFeatrueProperties } from "./types";
-import LayerGroup  from "../LayerGroup";
+import LayerGroup from "../LayerGroup";
 
-type DrawType = "Point" | "LineString" | "Polygon";
+import centroid from '@turf/centroid';
+import turfArea from '@turf/area';
+import turfLength from '@turf/length';
+import * as turf from '@turf/turf'
+
+type DrawType = "Point" | "LineString" | "Polygon" | "Rectangle" | "Circle";
 type MapBoxClickEvent = mapboxgl.MapMouseEvent & mapboxgl.EventData
 
 interface DrawBaseOptions {
@@ -412,6 +417,495 @@ class DrawPolygon extends DrawBase<GeoJSON.Polygon> {
     }
 }
 
+class DrawRectangle extends DrawBase<GeoJSON.Polygon> {
+    readonly type = 'Polygon'
+
+    protected onInit(): mapboxgl.AnyLayer[] {
+        return [{
+            id: this.id,
+            type: 'fill',
+            source: this.id,
+            paint: {
+                "fill-color": ['get', 'polygonColor', ['get', 'style']],
+                'fill-opacity': ['get', 'polygonOpacity', ['get', 'style']],
+            }
+        }, {
+            id: `${this.id}_outline`,
+            type: 'line',
+            source: this.id,
+            paint: {
+                "line-color": ['get', 'polygonOutlineColor', ['get', 'style']],
+                "line-width": ['get', 'polygonOutlineWidth', ['get', 'style']]
+            }
+        }, {
+            id: `${this.id}_label`,
+            type: 'symbol',
+            source: this.id,
+            layout: {
+                "text-field": ['get', 'name'],
+                'text-size': ['get', 'textSize', ['get', 'style']]
+            },
+            paint: {
+                "text-color": ['get', 'textColor', ['get', 'style']],
+                "text-halo-width": ['get', 'textHaloWidth', ['get', 'style']],
+                "text-halo-color": ['get', 'textHaloColor', ['get', 'style']],
+            }
+        }, {
+            id: this.id + "_outline_addion",
+            type: 'line',
+            source: {
+                'type': 'geojson',
+                'data': {
+                    type: 'FeatureCollection',
+                    features: []
+                }
+            },
+            paint: {
+            }
+        }, {
+            id: this.id + "_rectangle",
+            type: 'line',
+            source: {
+                'type': 'geojson',
+                'data': {
+                    type: 'FeatureCollection',
+                    features: []
+                }
+            },
+            paint: {
+                'line-width': 1,
+                'line-color': "#4aa1eb"
+            }
+        }];
+    }
+
+    protected onStart(properties: MarkerFeatrueProperties): void {
+
+        this.map.setPaintProperty(this.id + "_outline_addion", "line-color", properties.style.polygonOutlineColor);
+        this.map.setPaintProperty(this.id + "_outline_addion", "line-width", properties.style.polygonOutlineWidth);
+
+        // 初始点坐标
+        let starCoords: any[] = [];
+        // 移动点坐标
+        let moveCoords: any[] = [];
+
+        // 鼠标移动 动态构建线段
+        const mouseMoveHandler = (e: MapBoxClickEvent) => {
+            const coord = [e.lngLat.lng, e.lngLat.lat];
+            const coords = this.currentFeature!.geometry.coordinates[0];
+
+            // 动态画矩形
+            moveCoords = coord;
+            var rightTopCoords = [moveCoords[0], starCoords[1]];
+            var buttomLeftCoords = [starCoords[0], moveCoords[1]];
+            (this.map.getSource(this.id + "_rectangle") as mapboxgl.GeoJSONSource).setData({
+                type: 'Feature',
+                geometry: { type: 'LineString', coordinates: [starCoords, rightTopCoords, moveCoords, buttomLeftCoords, starCoords] },
+                properties: {}
+            });
+
+            if (coords.length === 2) {
+                (this.map.getSource(this.id + "_outline_addion") as mapboxgl.GeoJSONSource).setData({
+                    type: 'Feature',
+                    geometry: { type: 'LineString', coordinates: coords },
+                    properties: {}
+                })
+            }
+
+            if (coords.length > 1)
+                coords.pop();
+
+            if (coords.length > 1) {
+                coords.pop();
+            }
+
+            coords.push(coord);
+            if (coords.length > 2)
+                coords.push(coords[0]);
+            else
+                (this.map.getSource(this.id + "_outline_addion") as mapboxgl.GeoJSONSource).setData({
+                    type: 'Feature',
+                    geometry: { type: 'LineString', coordinates: coords },
+                    properties: {}
+                })
+
+            this.update();
+        }
+
+        // 删除点
+        const rightClickHandler = (e: MapBoxClickEvent) => {
+            const coords = this.currentFeature!.geometry.coordinates[0];
+
+            if (coords.length === 2)  // 只存在第一个点和动态点则不进行删除操作
+                return;
+
+            coords.pop();
+            mouseMoveHandler(e); // 调用鼠标移动事件，重新建立动态线
+
+            this.update();
+        }
+
+        const clickHandler = (e: MapBoxClickEvent) => {
+            const coord = [e.lngLat.lng, e.lngLat.lat];
+            // 判断是否为初次绘制
+            if (!this.currentFeature) {
+                starCoords = coord;
+
+                this.data.features.push({
+                    type: 'Feature',
+                    geometry: {
+                        type: 'Polygon',
+                        coordinates: [[coord]]
+                    },
+                    properties: {
+                        ...properties,
+                        id: creator.uuid(),
+                        date: Date.now()
+                    }
+                });
+
+                this.map.on('contextmenu', rightClickHandler);
+                this.map.on('mousemove', mouseMoveHandler);
+                this.map.once('dblclick', dblClickHandler);
+            } else {
+                const coords = this.currentFeature.geometry.coordinates[0];
+                // if (coords.length > 2)
+                coords.pop(); //删除第一个点
+                coords.push(coord);
+                // coords.push(coords[0]);
+
+                var rightTopCoords = [coord[0], starCoords[1]];
+                var buttomLeftCoords = [starCoords[0], coord[1]];
+                coords.push(starCoords, rightTopCoords, coord, buttomLeftCoords, starCoords);
+
+                dblClickHandler(e);
+            }
+
+            this.update();
+        };
+
+        const dblClickHandler = (e: MapBoxClickEvent) => {
+            // const coords = this.currentFeature!.geometry.coordinates[0];
+            // coords.pop();
+            // coords.pop();
+            // coords.pop();
+
+            this.map.off('click', clickHandler);
+            this.map.off('contextmenu', rightClickHandler);
+            this.map.off('mousemove', mouseMoveHandler);
+
+            // if (coords.length < 3)
+            //     return;
+
+            // coords.push(coords[0]);
+            this.update();
+
+            (this.map.getSource(this.id + "_outline_addion") as mapboxgl.GeoJSONSource).setData({
+                type: 'FeatureCollection',
+                features: []
+            });
+            (this.map.getSource(this.id + "_rectangle") as mapboxgl.GeoJSONSource).setData({
+                type: 'FeatureCollection',
+                features: []
+            });
+            this.options.onDrawFinish(this, () => {
+                this.end();
+            })
+        }
+
+        this.onEnd = () => {
+            (this.map.getSource(this.id + "_outline_addion") as mapboxgl.GeoJSONSource).setData({
+                type: 'FeatureCollection',
+                features: []
+            });
+            (this.map.getSource(this.id + "_rectangle") as mapboxgl.GeoJSONSource).setData({
+                type: 'FeatureCollection',
+                features: []
+            });
+            this.map.off('click', clickHandler);
+            this.map.off('contextmenu', rightClickHandler);
+            this.map.off('mousemove', mouseMoveHandler);
+            this.map.off('dblclick', dblClickHandler);
+        }
+
+        this.map.on('click', clickHandler);
+    }
+}
+
+class DrawCircle extends DrawBase<GeoJSON.Polygon> {
+    readonly type = 'Polygon'
+
+    protected onInit(): mapboxgl.AnyLayer[] {
+        return [{
+            id: this.id,
+            type: 'fill',
+            source: this.id,
+            paint: {
+                "fill-color": ['get', 'polygonColor', ['get', 'style']],
+                'fill-opacity': ['get', 'polygonOpacity', ['get', 'style']],
+            }
+        }, {
+            id: `${this.id}_outline`,
+            type: 'line',
+            source: this.id,
+            paint: {
+                "line-color": ['get', 'polygonOutlineColor', ['get', 'style']],
+                "line-width": ['get', 'polygonOutlineWidth', ['get', 'style']]
+            }
+        }, {
+            id: `${this.id}_label`,
+            type: 'symbol',
+            source: this.id,
+            layout: {
+                "text-field": ['get', 'name'],
+                'text-size': ['get', 'textSize', ['get', 'style']],
+                'text-variable-anchor': ['top']
+            },
+            paint: {
+                "text-color": ['get', 'textColor', ['get', 'style']],
+                "text-halo-width": ['get', 'textHaloWidth', ['get', 'style']],
+                "text-halo-color": ['get', 'textHaloColor', ['get', 'style']],
+            }
+        }, {
+            id: this.id + "_outline_addion",
+            type: 'line',
+            source: {
+                'type': 'geojson',
+                'data': {
+                    type: 'FeatureCollection',
+                    features: []
+                }
+            },
+            paint: {
+            }
+        }, {
+            id: this.id + "_circle",
+            type: 'line',
+            source: {
+                'type': 'geojson',
+                'data': {
+                    type: 'FeatureCollection',
+                    features: []
+                }
+            },
+            paint: {
+                "line-width": 1,
+                "line-color": "blue"
+            }
+        }];
+    }
+
+    protected onStart(properties: MarkerFeatrueProperties): void {
+
+        this.map.setPaintProperty(this.id + "_outline_addion", "line-color", properties.style.polygonOutlineColor);
+        this.map.setPaintProperty(this.id + "_outline_addion", "line-width", properties.style.polygonOutlineWidth);
+
+        // 初始点坐标
+        let starCoords: any[] = [];
+        // 移动点坐标
+        let moveCoords: any[] = [];
+        // 圆坐标
+        let circleCoords: any;
+
+        // 鼠标移动 动态构建线段
+        const mouseMoveHandler = (e: MapBoxClickEvent) => {
+            const coord = [e.lngLat.lng, e.lngLat.lat];
+            const coords = this.currentFeature!.geometry.coordinates[0];
+
+            // 动态画圆形
+            moveCoords = coord;
+            if (starCoords.length != 0) {
+                // centerCoords = [(parseFloat(starCoords[0]) + parseFloat(moveCoords[0])) / 2, (parseFloat(starCoords[1]) + parseFloat(moveCoords[1])) / 2];
+                var _points = [];
+                _points.push(moveCoords)
+                _points.unshift(starCoords);
+                //points.concat([moveCoords]);
+
+                var line = turf.lineString(_points);
+                var len = turf.length(line);
+                if (len < 1) {
+                    // _pixelRadius = len
+                    //m
+                    // len = Math.round(len * 1000);
+                    //  map.getSource('circle').setData(createGeoJSONCircle(starCoords, len));
+                } else {
+                    //km
+                    len = Number(len.toFixed(2));
+                    // _pixelRadius = len
+                    //(this.map.getSource(this.id + "_circle") as mapboxgl.GeoJSONSource).setData(getCircleCoordinates(starCoords, len));
+                    circleCoords = getCircleCoordinates(starCoords, len);
+                    (this.map.getSource(this.id + "_circle") as mapboxgl.GeoJSONSource).setData({
+                        type: 'Feature',
+                        geometry: { type: 'LineString', coordinates: circleCoords },
+                        properties: {}
+                    });
+                }
+            }
+            // 添加中间点
+            const centerPoint = [(starCoords[0] + coord[0]) / 2, (starCoords[1] + coord[1]) / 2];
+            const segment = getDistanceString({ type: 'LineString', coordinates: [coord, starCoords] });
+            console.log(`${segment}`);
+
+
+
+            if (coords.length === 2) {
+                (this.map.getSource(this.id + "_outline_addion") as mapboxgl.GeoJSONSource).setData({
+                    type: 'Feature',
+                    geometry: { type: 'LineString', coordinates: coords },
+                    properties: {}
+                })
+            }
+
+            if (coords.length > 1)
+                coords.pop();
+
+            if (coords.length > 1) {
+                coords.pop();
+            }
+
+            coords.push(coord);
+            if (coords.length > 2)
+                coords.push(coords[0]);
+            else
+                (this.map.getSource(this.id + "_outline_addion") as mapboxgl.GeoJSONSource).setData({
+                    type: 'Feature',
+                    geometry: { type: 'LineString', coordinates: coords },
+                    properties: {}
+                })
+
+            this.update();
+        }
+
+        // 删除点
+        const rightClickHandler = (e: MapBoxClickEvent) => {
+            const coords = this.currentFeature!.geometry.coordinates[0];
+
+            if (coords.length === 2)  // 只存在第一个点和动态点则不进行删除操作
+                return;
+
+            coords.pop();
+            mouseMoveHandler(e); // 调用鼠标移动事件，重新建立动态线
+
+            this.update();
+        }
+
+        const clickHandler = (e: MapBoxClickEvent) => {
+            const coord = [e.lngLat.lng, e.lngLat.lat];
+            // 判断是否为初次绘制
+            if (!this.currentFeature) {
+                starCoords = coord;
+
+                this.data.features.push({
+                    type: 'Feature',
+                    geometry: {
+                        type: 'Polygon',
+                        coordinates: [[coord]]
+                    },
+                    properties: {
+                        ...properties,
+                        id: creator.uuid(),
+                        date: Date.now()
+                    }
+                });
+
+                this.map.on('contextmenu', rightClickHandler);
+                this.map.on('mousemove', mouseMoveHandler);
+                this.map.once('dblclick', dblClickHandler);
+            } else {
+                const coords = this.currentFeature.geometry.coordinates[0];
+                // if (coords.length > 2)
+                coords.pop(); //删除第一个点
+                coords.pop();
+                // coords.push(coord);
+                // coords.push(coords[0]);
+
+                coords.push(...circleCoords);
+
+                dblClickHandler(e);
+            }
+
+            this.update();
+        };
+
+        const dblClickHandler = (e: MapBoxClickEvent) => {
+            // const coords = this.currentFeature!.geometry.coordinates[0];
+            // coords.pop();
+            // coords.pop();
+            // coords.pop();
+
+            this.map.off('click', clickHandler);
+            this.map.off('contextmenu', rightClickHandler);
+            this.map.off('mousemove', mouseMoveHandler);
+
+            // if (coords.length < 3)
+            //     return;
+
+            // coords.push(coords[0]);
+            this.update();
+
+            (this.map.getSource(this.id + "_outline_addion") as mapboxgl.GeoJSONSource).setData({
+                type: 'FeatureCollection',
+                features: []
+            });
+            (this.map.getSource(this.id + "_circle") as mapboxgl.GeoJSONSource).setData({
+                type: 'FeatureCollection',
+                features: []
+            });
+            this.options.onDrawFinish(this, () => {
+                this.end();
+            })
+        }
+
+        const getCircleCoordinates = (center: number[], radiusInKm: number, points: number = 64): number[][] => {
+            var coords = {
+                latitude: center[1],
+                longitude: center[0]
+            };
+            var km = radiusInKm;
+            var ret = [];
+            var distanceX = km / (111.320 * Math.cos(coords.latitude * Math.PI / 180));
+            var distanceY = km / 110.574;
+
+            var theta, x, y;
+            for (var i = 0; i < points; i++) {
+                theta = (i / points) * (2 * Math.PI);
+                x = distanceX * Math.cos(theta);
+                y = distanceY * Math.sin(theta);
+
+                ret.push([coords.longitude + x, coords.latitude + y]);
+            }
+            ret.push(ret[0]);
+            return ret;
+        };
+
+        const getDistanceString = (line: GeoJSON.LineString) => {
+            const length = turfLength({
+                type: 'Feature',
+                geometry: line,
+                properties: {}
+            });
+            return length;
+        }
+
+        this.onEnd = () => {
+            (this.map.getSource(this.id + "_outline_addion") as mapboxgl.GeoJSONSource).setData({
+                type: 'FeatureCollection',
+                features: []
+            });
+            (this.map.getSource(this.id + "_circle") as mapboxgl.GeoJSONSource).setData({
+                type: 'FeatureCollection',
+                features: []
+            });
+            this.map.off('click', clickHandler);
+            this.map.off('contextmenu', rightClickHandler);
+            this.map.off('mousemove', mouseMoveHandler);
+            this.map.off('dblclick', dblClickHandler);
+        }
+
+        this.map.on('click', clickHandler);
+    }
+}
+
 export default class DrawManager {
     private readonly draws: Map<DrawType, DrawBase<GeoJSON.Geometry>>;
     private currentDraw?: DrawBase<GeoJSON.Geometry>;
@@ -421,6 +915,8 @@ export default class DrawManager {
             ['Point', new DrawPoint(map, options)],
             ['LineString', new DrawLineString(map, options)],
             ['Polygon', new DrawPolygon(map, options)],
+            ['Rectangle', new DrawRectangle(map, options)],
+            ['Circle', new DrawCircle(map, options)],
         ]);
 
         document.addEventListener('keydown', e => {
@@ -440,13 +936,13 @@ export default class DrawManager {
     }
 
     moveTo(beforeId?: string) {
-        this.draws.forEach(d=>{
+        this.draws.forEach(d => {
             d.layerGroup.moveTo(beforeId);
         });
     }
 
-    destroy(){
-        this.draws.forEach(d=>{
+    destroy() {
+        this.draws.forEach(d => {
             this.map.removeLayerGroup(d.layerGroup.id);
         })
     }

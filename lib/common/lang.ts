@@ -45,6 +45,9 @@ interface ILanguageOptions {
     line: string,
     outline: string,
     polygon: string,
+    rectangle: string,
+    circle: string,
+
 
     edit_graph: string,
     area: string,
@@ -54,11 +57,11 @@ interface ILanguageOptions {
 }
 
 const zh: ILanguageOptions = {
-    title: "标注",
+    title: "图层管理",
     searchPlaceholder: "请输入标注名称",
     nameText: '名称',
 
-    newMarkerName: "标注",
+    newMarkerName: "新标注",
     newLayer: "新建图层",
     chooseLayer: "选择图层",
 
@@ -97,7 +100,9 @@ const zh: ILanguageOptions = {
     pointIcon: '图标',
     line: "线",
     outline: "轮廓线",
-    polygon: '面',
+    polygon: '多边形',
+    rectangle: '矩形',
+    circle:'圆形',
 
     edit_graph: '编辑图形',
     area: '面积',
@@ -151,6 +156,8 @@ const en: ILanguageOptions = {
     line: "line",
     outline: "outline",
     polygon: 'polygon',
+    rectangle: 'rectangle',
+    circle:'circle',
 
     edit_graph: 'edit graph',
     area: 'area',

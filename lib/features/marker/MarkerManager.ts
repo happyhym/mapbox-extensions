@@ -90,8 +90,8 @@ export default class MarkerManager {
             layerId: options.layers[0].id,
             date: Date.now(),
             style: {
-                textSize: 14,
-                textColor: 'black',
+                textSize: 12,
+                textColor: 'red',
                 textHaloColor: 'white',
                 textHaloWidth: 1,
 
@@ -99,13 +99,13 @@ export default class MarkerManager {
                 pointIconColor: "#ff0000",
                 pointIconSize: 0.3,
 
-                lineColor: '#0000ff',
-                lineWidth: 3,
+                lineColor: 'blue',
+                lineWidth: 1,
 
-                polygonColor: '#0000ff',
-                polygonOpacity: 0.5,
-                polygonOutlineColor: '#000000',
-                polygonOutlineWidth: 2,
+                polygonColor: '#fff',
+                polygonOpacity: 0.1,
+                polygonOutlineColor: 'blue',
+                polygonOutlineWidth: 1,
             }
         };
 
@@ -117,10 +117,11 @@ export default class MarkerManager {
                 const feature = draw.currentFeature!;
                 const orgCenter = map.getCenter();
                 const center = centroid(feature as any);
-                map.easeTo({
-                    center: center.geometry.coordinates as [number, number],
-                    'offset': this.options.drawAfterOffset
-                });
+                // 临时禁用
+                // map.easeTo({
+                //     center: center.geometry.coordinates as [number, number],
+                //     'offset': this.options.drawAfterOffset
+                // });
 
                 createFeaturePropertiesEditModal(feature, {
                     mode: 'create',
@@ -129,16 +130,17 @@ export default class MarkerManager {
                         this.addMarker(feature);
                         this.lastFeaturePropertiesCache = deep.clone(feature.properties);
                         flush();
-                        map.easeTo({
-                            center: orgCenter
-                        });
+                        // 临时禁用
+                        // map.easeTo({
+                        //     center: orgCenter
+                        // });
                     },
                     onCancel: () => {
                         flush();
-
-                        map.easeTo({
-                            center: orgCenter
-                        });
+                        // 临时禁用
+                        // map.easeTo({
+                        //     center: orgCenter
+                        // });
                     },
                     onPropChange: () => draw.update()
                 });
@@ -180,7 +182,7 @@ export default class MarkerManager {
             }
             MapboxDraw.modes.simple_select.onTrash = function (this, _) { }
         }
-        
+
         //#endregion
 
         // 图层通过时间排序、创建图层、图层初始设置不可见
@@ -244,31 +246,43 @@ export default class MarkerManager {
         const btnPoint = dom.createHtmlElement('div', ["jas-ctrl-marker-item-btn"]);
         const btnLine = dom.createHtmlElement('div', ["jas-ctrl-marker-item-btn"]);
         const btnPolygon = dom.createHtmlElement('div', ["jas-ctrl-marker-item-btn"]);
+        const btnRectangle = dom.createHtmlElement('div', ["jas-ctrl-marker-item-btn"]);
+        const btnCircle = dom.createHtmlElement('div', ["jas-ctrl-marker-item-btn"]);
 
         // 设置 title
         btnPoint.title = lang.point;
         btnLine.title = lang.line;
         btnPolygon.title = lang.polygon;
+        btnRectangle.title = lang.rectangle;
+        btnCircle.title = lang.circle;
 
         // 设置 图标
         const svgBuilder = new SvgBuilder('marker_point');
         btnPoint.innerHTML = svgBuilder.resize(22, 22).create();
         btnLine.innerHTML = svgBuilder.change('marker_line').create();
-        btnPolygon.innerHTML = svgBuilder.resize(21, 21).change('marker_polygon').create();
+        // btnPolygon.innerHTML = `<img src="../assets/svg/polygon.svg"/>`//svgBuilder.resize(21, 21).change('marker_polygon').create();
+        // btnRectangle.innerHTML =`<img src="../assets/svg/rectangle.svg"/>`;svgBuilder.resize(21, 21).change('marker_rectangle').create();
+        // btnCircle.innerHTML = `<img src="../assets/svg/circle.svg"/>`;//svgBuilder.resize(21, 21).change('marker_circle').create();
+        btnPolygon.innerHTML = `<img src="_content/IDSSE.OceanExplorer.Shared/images/svg/polygon.svg"/>`//svgBuilder.resize(21, 21).change('marker_polygon').create();
+        btnRectangle.innerHTML =`<img src="_content/IDSSE.OceanExplorer.Shared/images/svg/rectangle.svg"/>`;svgBuilder.resize(21, 21).change('marker_rectangle').create();
+        btnCircle.innerHTML = `<img src="_content/IDSSE.OceanExplorer.Shared/images/svg/circle.svg"/>`;//svgBuilder.resize(21, 21).change('marker_circle').create();
+
 
         // 绑定click，开始绘制
         btnPoint.addEventListener('click', () => this.drawManger.start('Point', deep.clone(this.lastFeaturePropertiesCache)));
         btnLine.addEventListener('click', () => this.drawManger.start('LineString', deep.clone(this.lastFeaturePropertiesCache)));
         btnPolygon.addEventListener('click', () => this.drawManger.start('Polygon', deep.clone(this.lastFeaturePropertiesCache)));
+        btnRectangle.addEventListener('click', () => this.drawManger.start('Rectangle', deep.clone(this.lastFeaturePropertiesCache)));
+        btnCircle.addEventListener('click', () => this.drawManger.start('Circle', deep.clone(this.lastFeaturePropertiesCache)));
 
         const c = dom.createHtmlElement('div', ["jas-flex-center", "jas-ctrl-marker-btns-container"]);
-        c.append(btnPoint, btnLine, btnPolygon);
+        c.append(btnPoint, btnLine, btnPolygon,btnRectangle,btnCircle);
 
         return c;
     }
 
     private createHeaderAddLayer() {
-        const div = dom.createHtmlElement('div', ["jas-ctrl-marker-btns-container", "jas-ctrl-marker-item-btn"]);
+         const div = dom.createHtmlElement('div', ["jas-ctrl-marker-btns-container", "jas-ctrl-marker-item-btn"]);
         div.innerHTML = new SvgBuilder('add').resize(25, 25).create();
         div.title = lang.newLayer;
 
@@ -486,7 +500,8 @@ class MarkerLayer extends AbstractLinkP<MarkerManager> {
             if (!item) return;
 
             const center = centroid(feature as any).geometry.coordinates as [number, number];
-            map.easeTo({ center });
+            // 临时禁用
+            // map.easeTo({ center });
             const controls = item.createSuffixElement({ editGeometry: true });
             const popupContent = dom.createHtmlElement('div', [], [controls]);
 
@@ -584,11 +599,16 @@ class MarkerLayer extends AbstractLinkP<MarkerManager> {
 
         const suffix = dom.createHtmlElement('div', ['jas-ctrl-marker-suffix', 'jas-ctrl-hidden']);
 
-        suffix.append(
-            this.createSuffixEdit(),
-            this.createSuffixImport(),
-            this.createSuffixExport(),
-            this.createSuffixDel());
+        // 用于控制以 this.properties.name 命名的图层，这样本图层可不设置 markerOptions.featureCollection.features
+        let nameLayer = this.map.getLayer(this.properties.name);
+        // 基础图层禁用编辑/导入/导出/删除按钮
+        if (!nameLayer) {
+            suffix.append(
+                this.createSuffixEdit(),
+                this.createSuffixImport(),
+                this.createSuffixExport(),
+                this.createSuffixDel());
+        }
 
         header.addEventListener('mouseenter', () => {
             suffix.classList.remove('jas-ctrl-hidden');
@@ -712,6 +732,11 @@ class MarkerLayer extends AbstractLinkP<MarkerManager> {
             const isEye = visible.innerHTML === eye;
             visible.innerHTML = isEye ? uneye : eye;
             this.layerGroup.show = !isEye;
+
+            // 用于控制以 this.properties.name 命名的图层，这样本图层可不设置 markerOptions.featureCollection.features
+            let nameLayer = this.map.getLayer(this.properties.name);
+            if (nameLayer)
+                this.map.setLayoutProperty(this.properties.name, "visibility", this.layerGroup.show ? "visible" : "none");
         });
 
         this.setGeometryVisible = (value: boolean) => {
@@ -753,6 +778,8 @@ class MarkerItem extends AbstractLinkP<MarkerLayer> {
         this.reName = (name: string) => content.innerText = name;
 
         content.addEventListener('click', () => {
+            // 临时禁用
+            return;
             const box = bbox(this.feature as any);
             map.fitBounds([box[0], box[1], box[2], box[3]], {
                 maxZoom: 20,
@@ -842,10 +869,11 @@ class MarkerItem extends AbstractLinkP<MarkerLayer> {
                 const offset = this.parent.parent.options.drawAfterOffset;
                 const orgCenter = this.map.getCenter();
                 const center = centroid(this.feature as any);
-                this.map.easeTo({
-                    center: center.geometry.coordinates as [number, number],
-                    'offset': offset
-                });
+                // 临时禁用
+                // this.map.easeTo({
+                //     center: center.geometry.coordinates as [number, number],
+                //     'offset': offset
+                // });
 
                 createFeaturePropertiesEditModal(this.feature, {
                     layers: [],
@@ -854,10 +882,12 @@ class MarkerItem extends AbstractLinkP<MarkerLayer> {
                         // 外部更新
                         this.options.onUpdate?.call(undefined, this.feature);
                         update();
-                        this.map.easeTo({ center: orgCenter });
+                        // 临时禁用
+                        // this.map.easeTo({ center: orgCenter });
                     },
                     onCancel: () => {
-                        this.map.easeTo({ center: orgCenter });
+                        // 临时禁用
+                        // this.map.easeTo({ center: orgCenter });
                     },
                     onPropChange: () => {
                         update();

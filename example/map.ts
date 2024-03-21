@@ -14,14 +14,110 @@ const darkStyle = "mapbox://styles/mapbox/dark-v10";
 const lightStyle = 'mapbox://styles/mapbox/light-v11';
 let currentStyle = lightStyle;
 
+let useOnlineMap = true;
+let mapBaseUrl = `${window.location.origin}`;
+let idsseMapBaseUrl = `${window.location.protocol}//${window.location.hostname}:9802/tiles`;
+let baseMaps = {
+    "IDSSE": `${idsseMapBaseUrl}/geoserver/gwc/service/wmts/rest/ne:gmrt_20231018/5/EPSG:900913/EPSG:900913:{z}/{y}/{x}?format=image/jpeg`,
+    //`${idsseMapBaseUrl}/geoserver/gwc/service/wmts?REQUEST=GetTile&SERVICE=WMTS&VERSION=1.0.0&LAYER=ne:gmrt_20231018&STYLE=&TILEMATRIX=EPSG:900913:{z}&TILECOL={x}&TILEROW={y}&TILEMATRIXSET=EPSG:900913&FORMAT=image/jpeg`
+    //idsse wmts：http://10.1.51.234:9802/tiles/geoserver/gwc/service/wmts?service=WMTS&version=1.1.1&request=GetCapabilities
+    //`${ idsseMapBaseUrl }/geoserver/gwc/service/wmts/rest/ne:gmrt_20231018/{style}/{TileMatrixSet}/{TileMatrix}/{TileRow}/{TileCol}?format=image/jpeg`
+    //`${ idsseMapBaseUrl }/geoserver/gwc/service/wmts?service=WMTS&version=1.1.1&request=GetCapabilities&layer=ne:gmrt_20231018`
+    "GMRT": "https://www.gmrt.org/services/mapserver/wms_merc?service=WMS&version=1.1.1&request=GetMap&layers=GMRT&styles=&bbox={bbox-epsg-3857}&width=128&height=128&srs=EPSG:3857&format=image/png&TRANSPARENT=TRUE",
+    "GS": "http://115.29.149.99:8066/land22/{z}/{y}/{x}.png",
+    "谷歌": useOnlineMap ? "https://gac-geo.googlecnapps.cn/maps/vt?lyrs=y&hl=zh-CN&gl=CN&x={x}&y={y}&z={z}" : `${mapBaseUrl}/api/MapTile/Google/{z}/{y}/{x}`,
+    // mt(0—3) Google地图使用了四个服务地址；lyrs=m：路线图，t：地形图，p：带标签的地形图，s：卫星图，y：带标签的卫星图，h：标签层（路名、地名等）
+    "高德": useOnlineMap ? 'https://webrd01.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}' : `${mapBaseUrl}/api/MapTile/高德/{z}/{y}/{x}`,
+    // wprd0{1-4}
+    // scl=1&style=7 为矢量图（含路网和注记）
+    // scl=2&style=7 为矢量图（含路网但不含注记）
+    // scl=1&style=6 为影像底图（不含路网，不含注记）
+    // scl=2&style=6 为影像底图（不含路网、不含注记）
+    // scl=1&style=8 为影像路图（含路网，含注记）
+    // scl=2&style=8 为影像路网（含路网，不含注记）
+    "高德1": "http://wprd01.is.autonavi.com/appmaptile?x={x}&y={y}&z={z}&lang=zh_cn&size=1&scl=1&style=6",
+    //"天地图": "http://t1.tianditu.com/DataServer?T=img_w&x={x}&y={y}&l={z}&tk=4b01c1b56c6bcba2eb9b8e987529c44f",
+    "天地图影像1": `http://t${Math.floor(Math.random() * 7)}.tianditu.gov.cn/DataServer?T=img_w&x={x}&y={y}&l={z}&tk=4b01c1b56c6bcba2eb9b8e987529c44f`,
+    "天地图影像2": `http://t${Math.floor(Math.random() * 7)}.tianditu.gov.cn/DataServer?T=cia_w&x={x}&y={y}&l={z}&tk=4b01c1b56c6bcba2eb9b8e987529c44f`,
+    "天地图电子1": `http://t${Math.floor(Math.random() * 7)}.tianditu.gov.cn/DataServer?T=vec_w&x={x}&y={y}&l={z}&tk=4b01c1b56c6bcba2eb9b8e987529c44f`,
+    "天地图电子2": `http://t${Math.floor(Math.random() * 7)}.tianditu.gov.cn/DataServer?T=cva_w&x={x}&y={y}&l={z}&tk=4b01c1b56c6bcba2eb9b8e987529c44f`,
+    "天地图地形1": `http://t${Math.floor(Math.random() * 7)}.tianditu.gov.cn/DataServer?T=ter_w&x={x}&y={y}&l={z}&tk=4b01c1b56c6bcba2eb9b8e987529c44f`,
+    "天地图地形2": `http://t${Math.floor(Math.random() * 7)}.tianditu.gov.cn/DataServer?T=cta_w&x={x}&y={y}&l={z}&tk=4b01c1b56c6bcba2eb9b8e987529c44f`,
+    "OpenStreet": "https://a.tile.openstreetmap.org/{z}/{x}/{y}.png",
+    "CARTO_BaseMap": "http://www.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
+    "World_Imagery": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+    "Esri_DarkGrey": "http://c.sm.mapstack.stamen.com/(toner-lite,$fff[difference],$fff[@23],$fff[hsl-saturation@20])/{z}/{x}/{y}.png",
+    "智图": "http://map.geoq.cn/ArcGIS/rest/services/ChinaOnlineCommunity/MapServer/tile/{z}/{y}/{x}",
+    "OceanBasemap": "https://server.arcgisonline.com/arcgis/rest/services/Ocean_Basemap/MapServer/tile/{z}/{y}/{x}.jpg"
+}
+
 mapboxgl.accessToken = 'pk.eyJ1IjoiY29jYWluZWNvZGVyIiwiYSI6ImNrdHA1YjlleDBqYTEzMm85bTBrOWE0aXMifQ.J8k3R1QBqh3pyoZi_5Yx9w';
 
 const map = new mapboxgl.Map({
     container: 'map',
-    zoom: 10,
+    zoom: 6,
     center: [120.5, 31],
     pitch: 0,
-    style: currentStyle,
+    style: {
+        "version": 8,
+        "name": "default_style",
+        //地图雾效果，主要在三维展示
+        fog: {
+            range: [2, 20],
+            color: 'hsl(0, 0%, 100%)',
+            'high-color': 'hsl(210, 100%, 80%)',
+            'space-color': [
+                'interpolate',
+                ['exponential', 1.2],
+                ['zoom'],
+                5,
+                'hsl(210, 40%, 30%)',
+                7,
+                'hsl(210, 100%, 80%)',
+            ],
+            'horizon-blend': ['interpolate', ['exponential', 1.2], ['zoom'], 5, 0.02, 7, 0.08],
+            'star-intensity': ['interpolate', ['exponential', 1.2], ['zoom'], 5, 0.1, 7, 0],
+        },
+        // mapbox地图使用的图标。
+        //"sprite": "mapbox://sprites/mapbox/streets-v8",
+        //"sprite": "mapbox://sprites/mapbox/bright-v8",
+        //"sprite": `${mapBaseUrl}/sprites/sprite@2x`,
+        //"sprite": `${mapBaseUrl}/sprites/sprite`,
+        // mapbox地图使用的标注字体。
+        "glyphs": "mapbox://fonts/mapbox/{fontstack}/{range}.pbf",
+        // glyphs:"http://207.207.88.59/maptiles/test/fonts/{fontstack}/{range}.pbf", //这个是重点，http://207.207.88.59/maptiles/test/fonts是字体文件路径。
+        "sources": {
+            "raster_tiles": {
+                // 资源的类型，必须是 vector, raster, raster-dem, geojson, image, video中的一种。
+                // 当前声明是xyz的png图片组成的底图，所以声明类型是raster。
+                "type": "raster",
+                'tiles': [
+                    // baseMaps.IDSSE,
+                    //"https://api.mapbox.com/v4/mapbox.mapbox-streets-v8/{z}/{x}/{y}.vector.pbf" //?sku=101c8tI0zFbh7&access_token=pk.eyJ1IjoiY29jYWluZWNvZGVyIiwiYSI6ImNrdHA1YjlleDBqYTEzMm85bTBrOWE0aXMifQ.J8k3R1QBqh3pyoZi_5Yx9w"
+                    //"https://api.mapbox.com/v4/mapbox.satellite/{z}/{x}/{y}.webp" //?sku=101c8tI0zFbh7&access_token=pk.eyJ1IjoiY29jYWluZWNvZGVyIiwiYSI6ImNrdHA1YjlleDBqYTEzMm85bTBrOWE0aXMifQ.J8k3R1QBqh3pyoZi_5Yx9w"
+                    // baseMaps.谷歌,
+                    baseMaps.智图,
+                    // baseMaps.GMRT
+                    // baseMaps.高德,
+                    // baseMaps.CARTO_BaseMap,
+                    // baseMaps.World_Imagery,
+                    // baseMaps.Esri_DarkGrey,
+                    // baseMaps.OceanBasemap,
+                    // baseMaps.GS,
+
+                    //"https://wi.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+                ],
+                "tileSize": 256
+            }
+        },
+        "layers": [{
+            "id": "raster_tiles",
+            "type": "raster",
+            "source": "raster_tiles",
+            // "minzoom": 3,
+            // "maxzoom": 15
+        }]
+    },
     attributionControl: false
 });
 
@@ -323,9 +419,9 @@ map.on('load', () => {
 
     // 切换卫星影像 可以自定义图层
     const switchMapControl = new SwitchMapControl({
-        extra: {
-            layerGroups
-        }
+        // extra: {
+        //     layerGroups
+        // }
     });
     map.addControl(switchMapControl);
     switchMapControl.adaptMobile();
@@ -450,7 +546,6 @@ map.on('load', () => {
                 }]
             },
             "经纬度网格": {
-
                 uiType: 'SwitchBtn',
                 collapse: true,
                 defaultCollapsed: false,

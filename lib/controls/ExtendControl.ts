@@ -21,7 +21,7 @@ export abstract class AbstractExtendControl implements mapboxgl.IControl {
     readonly mobileContainer: HTMLDivElement = dom.createHtmlElement('div', ["jas-ctrl-extend-mobile-contianer"]);
     readonly emitter = mitt<{ "openChange": boolean }>();
 
-    protected readonly minWidth = 600;
+    protected readonly minWidth = 300;
     private _open: boolean = false;
 
     constructor(private options: Omit<ExtendControlOptions, "content">) {
@@ -106,7 +106,17 @@ export abstract class AbstractExtendControl implements mapboxgl.IControl {
         });
 
         this.element.append(image_open_wapper, image_close_wapper);
-        this.element.append(desktopContainer);
+
+        var siderbar = document.getElementById("gisSidebar");
+        if (siderbar) {
+            this.element.style.display = "none";
+            // 图层管理改为在左侧边栏显示
+            siderbar.appendChild(desktopContainer);
+        }
+        else
+            this.element.append(desktopContainer);
+
+
         map.getContainer().append(this.mobileContainer);
 
         this.element.addEventListener('click', () => {
