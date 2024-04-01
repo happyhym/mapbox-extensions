@@ -2,6 +2,14 @@ import mapboxgl from "mapbox-gl";
 import { creator } from 'wheater';
 import MeasureBase, { MeasureOptions, MeasureType } from "./MeasureBase";
 
+// oe: 
+// 使用 declare 关键字声明要在 Typescript 中调用已在 Javascript 中定义的全局变量或函数
+declare const dotNetHelper: any;
+let that: MeasurePoint;
+export function showElevation(elevation: number): void {
+    alert(`Elevation: ${elevation}`);
+}
+
 export interface MeasurePointOptions extends MeasureOptions<GeoJSON.Point> {
 
     circlePaintBuilder?: (paint: mapboxgl.CirclePaint) => void;
@@ -27,11 +35,12 @@ export default class MeasurePoint extends MeasureBase {
     constructor(map: mapboxgl.Map, private options: MeasurePointOptions = {}) {
         options.createText ??= (lng: number, lat: number, elevation: number) => {
             if (elevation === 99999)
-                return `经度：${lng.toFixed(4)}°\r\n纬度：${lat.toFixed(4)}°`;
+                return `经度：${lng.toFixed(6)}°\r\n纬度：${lat.toFixed(6)}°`;
             else
-                return `经度：${lng.toFixed(4)}°\r\n纬度：${lat.toFixed(4)}°\r\n高程：${elevation}米`;
+                return `经度：${lng.toFixed(6)}°\r\n纬度：${lat.toFixed(6)}°\r\n高程：${elevation.toFixed(1)}米`;
         };
         super(map, options);
+        that = this;
     }
 
     protected onInit(): void {
@@ -52,7 +61,10 @@ export default class MeasurePoint extends MeasureBase {
             "text-field": ['get', 'coord'],
             'text-offset': [0, 2.5],
             'text-size': 12,
-            "text-justify": "left"
+            'text-justify': 'auto',
+            'text-radial-offset': 1.8,
+            'text-variable-anchor': ['top', 'bottom', 'left', 'right'],
+            "text-font": ["literal", ['Arial Unicode MS Regular', 'DIN Offc Pro Italic', 'Open Sans Regular']],
         };
         const symbolPaint: mapboxgl.SymbolPaint = {
             'text-color': "#000000",
@@ -100,7 +112,7 @@ export default class MeasurePoint extends MeasureBase {
             let maxx = lng + offset;
             let maxy = lat + offset;
             var bbox = `${minx},${miny},${maxx},${maxy}`;
-            var url = `${window.location.protocol}//${window.location.hostname}:9802/tiles/geoserver/wms/wms?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetFeatureInfo&FORMAT=image/jpeg&TRANSPARENT=true&QUERY_LAYERS=ne:gmrt_20231018&STYLES&LAYERS=ne:gmrt_20231018&exceptions=application/vnd.ogc.se_inimage&INFO_FORMAT=application/json&FEATURE_COUNT=50&X=50&Y=50&SRS=EPSG:4326&WIDTH=101&HEIGHT=101&BBOX=${bbox}`;
+            var url = `${window.location.protocol}//${window.location.hostname}:9801/tiles/geoserver/wms/wms?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetFeatureInfo&FORMAT=image/jpeg&TRANSPARENT=true&QUERY_LAYERS=ne:gmrt_20231018&STYLES&LAYERS=ne:gmrt_20231018&exceptions=application/vnd.ogc.se_inimage&INFO_FORMAT=application/json&FEATURE_COUNT=50&X=50&Y=50&SRS=EPSG:4326&WIDTH=101&HEIGHT=101&BBOX=${bbox}`;
             return (await (await fetch(url))?.json())?.features[0]?.properties?.GRAY_INDEX?.toFixed(1) ?? "N/A";
         }
         else if (this.options.elevationSource == "mapbox") {
@@ -111,24 +123,48 @@ export default class MeasurePoint extends MeasureBase {
             return 99999;
     }
 
-    private onMapClickHandle = async (e: mapboxgl.MapMouseEvent & mapboxgl.EventData) => {
-        let elevation = await this.queryElevation(e.lngLat);
+    // oe: 通过查询 ArcGIS 服务器获取高程数据
+    static addElevationMarker(lng: number, lat: number, elevation: number): void {
         const id = creator.uuid();
-        this.geojson.features.push({
+        that.geojson.features.push({
             type: 'Feature',
             id,
             geometry: {
                 type: 'Point',
-                coordinates: [e.lngLat.lng, e.lngLat.lat],
+                coordinates: [lng, lat],
             },
             properties: {
-                "coord": this.options.createText!(e.lngLat.lng, e.lngLat.lat, elevation),
+                "coord": that.options.createText!(lng, lat, elevation),
                 id
             }
         });
 
-        this.options.onDrawed?.call(this, id, this.geojson.features.at(-1)!.geometry as GeoJSON.Point);
+        that.options.onDrawed?.call(this, id, that.geojson.features.at(-1)!.geometry as GeoJSON.Point);
 
-        this.updateGeometryDataSource();
+        that.updateGeometryDataSource();
+    }
+
+    private onMapClickHandle = async (e: mapboxgl.MapMouseEvent & mapboxgl.EventData) => {
+        // oe:
+        dotNetHelper.invokeMethodAsync("QueryDepth", e.lngLat.lng, e.lngLat.lat)
+
+        // let elevation = await this.queryElevation(e.lngLat);
+        // const id = creator.uuid();
+        // this.geojson.features.push({
+        //     type: 'Feature',
+        //     id,
+        //     geometry: {
+        //         type: 'Point',
+        //         coordinates: [e.lngLat.lng, e.lngLat.lat],
+        //     },
+        //     properties: {
+        //         "coord": this.options.createText!(e.lngLat.lng, e.lngLat.lat, elevation),
+        //         id
+        //     }
+        // });
+
+        // this.options.onDrawed?.call(this, id, this.geojson.features.at(-1)!.geometry as GeoJSON.Point);
+
+        // this.updateGeometryDataSource();
     }
 }
