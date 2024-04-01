@@ -8,6 +8,8 @@ interface ILanguageOptions {
     newMarkerName: string,
     newLayer: string,
     chooseLayer: string,
+    saveLayer:string,
+    restoreLayer:string,
 
     markerName: string,
     fontSize: string,
@@ -57,13 +59,15 @@ interface ILanguageOptions {
 }
 
 const zh: ILanguageOptions = {
-    title: "图层管理",
-    searchPlaceholder: "请输入标注名称",
+    title: "航次规划辅助工具",
+    searchPlaceholder: "搜索标注",
     nameText: '名称',
 
     newMarkerName: "新标注",
     newLayer: "新建图层",
     chooseLayer: "选择图层",
+    saveLayer:"保存图层入库",
+    restoreLayer:"从数据库加载图层",
 
     markerName: "标注名称",
     fontSize: "大小",
@@ -119,6 +123,8 @@ const en: ILanguageOptions = {
     newMarkerName: "new-item",
     newLayer: "new-layer",
     chooseLayer: "choose layer",
+    saveLayer:"save layer",
+    restoreLayer:"restore layer",
 
     markerName: "text",
     fontSize: "font size",
