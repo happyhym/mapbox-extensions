@@ -27,7 +27,7 @@ export class KmlConverter implements IImportConverter {
                 id: f.id,
                 name: properties['name'] ?? "",
                 layerId,
-                date: Date.now(),
+                date: Date.now()-1704038400000,
                 style: options?.defaultStyle ?? getDefaultStyle(properties)
             }
         });

@@ -13,6 +13,14 @@ import Importer from "./importer/Importer";
 const { lang } = language;
 const { SvgBuilder } = svg;
 
+// oe: 使用 declare 关键字声明要在 Typescript 中调用已在 Javascript 中定义的全局变量或函数
+declare const dotNetHelper: any;
+declare const saveLayer: any;
+
+// oe: 要从数据库中删除的图层
+let layersToDeleted: any = [];
+export { layersToDeleted };
+
 interface MarkerItemOptions {
     onCreate?(feature: MarkerFeatureType): void,
     onRemove?(feature: MarkerFeatureType): void,
@@ -77,7 +85,7 @@ export default class MarkerManager {
             const layer = {
                 id: creator.uuid(),
                 name: lang.defaltLayerName,
-                date: Date.now()
+                date: Date.now() - 1704038400000
             };
             options.layers = [layer];
             options.layerOptions?.onCreate?.call(undefined, layer);
@@ -86,9 +94,10 @@ export default class MarkerManager {
         // 标注缓存，用于填充下一次标注
         this.lastFeaturePropertiesCache = {
             id: creator.uuid(),
-            name: lang.newMarkerName,
+            // oe: 不使用上次的标注
+            name: "",//lang.newMarkerName,
             layerId: options.layers[0].id,
-            date: Date.now(),
+            date: Date.now() - 1704038400000,
             style: {
                 textSize: 12,
                 textColor: 'red',
@@ -114,6 +123,40 @@ export default class MarkerManager {
         // 创建绘制管理器
         this.drawManger = new DrawManager(map, {
             onDrawFinish: (draw, flush) => {
+                const feature = draw.currentFeature!;
+                const orgCenter = map.getCenter();
+                const center = centroid(feature as any);
+                // 临时禁用
+                // map.easeTo({
+                //     center: center.geometry.coordinates as [number, number],
+                //     'offset': this.options.drawAfterOffset
+                // });
+
+                createFeaturePropertiesEditModal(feature, {
+                    mode: 'create',
+                    layers: this.markerLayers.map(x => x.properties),
+                    onConfirm: () => {
+                        this.addMarker(feature);
+                        this.lastFeaturePropertiesCache = deep.clone(feature.properties);
+                        flush();
+                        // 临时禁用
+                        // map.easeTo({
+                        //     center: orgCenter
+                        // });
+                    },
+                    onCancel: () => {
+                        flush();
+                        // 临时禁用
+                        // map.easeTo({
+                        //     center: orgCenter
+                        // });
+                    },
+                    onPropChange: () => draw.update()
+                });
+            },
+            // oe: 处理用户粘贴的坐标
+            onPasteStart: (draw, flush) => {
+                alert("onPasteStart");
                 const feature = draw.currentFeature!;
                 const orgCenter = map.getCenter();
                 const center = centroid(feature as any);
@@ -198,12 +241,14 @@ export default class MarkerManager {
         this.layerContainer = dom.createHtmlElement('div', ['jas-ctrl-marker-data'], this.markerLayers.map(x => x.htmlElement));
 
         const header = dom.createHtmlElement('div', ['jas-ctrl-marker-header'], [
-            this.createHeaderSearch(),
+            //this.createHeaderSearch(),// oe: HeaderSearch 单独占一行
             this.createHeaderAddLayer(),
             this.createHeaderDrawBtn()
         ]);
 
         this.htmlElement.append(header, this.layerContainer);
+        // oe: HeaderSearch 单独占一行
+        this.htmlElement.append(this.createHeaderSearch(), header, this.layerContainer);
     }
 
     private createHeaderSearch() {
@@ -260,11 +305,12 @@ export default class MarkerManager {
         const svgBuilder = new SvgBuilder('marker_point');
         btnPoint.innerHTML = svgBuilder.resize(22, 22).create();
         btnLine.innerHTML = svgBuilder.change('marker_line').create();
+        // oe:
         // btnPolygon.innerHTML = `<img src="../assets/svg/polygon.svg"/>`//svgBuilder.resize(21, 21).change('marker_polygon').create();
         // btnRectangle.innerHTML =`<img src="../assets/svg/rectangle.svg"/>`;svgBuilder.resize(21, 21).change('marker_rectangle').create();
         // btnCircle.innerHTML = `<img src="../assets/svg/circle.svg"/>`;//svgBuilder.resize(21, 21).change('marker_circle').create();
         btnPolygon.innerHTML = `<img src="_content/IDSSE.OceanExplorer.Shared/images/svg/polygon.svg"/>`//svgBuilder.resize(21, 21).change('marker_polygon').create();
-        btnRectangle.innerHTML =`<img src="_content/IDSSE.OceanExplorer.Shared/images/svg/rectangle.svg"/>`;svgBuilder.resize(21, 21).change('marker_rectangle').create();
+        btnRectangle.innerHTML = `<img src="_content/IDSSE.OceanExplorer.Shared/images/svg/rectangle.svg"/>`; svgBuilder.resize(21, 21).change('marker_rectangle').create();
         btnCircle.innerHTML = `<img src="_content/IDSSE.OceanExplorer.Shared/images/svg/circle.svg"/>`;//svgBuilder.resize(21, 21).change('marker_circle').create();
 
 
@@ -273,23 +319,35 @@ export default class MarkerManager {
         btnLine.addEventListener('click', () => this.drawManger.start('LineString', deep.clone(this.lastFeaturePropertiesCache)));
         btnPolygon.addEventListener('click', () => this.drawManger.start('Polygon', deep.clone(this.lastFeaturePropertiesCache)));
         btnRectangle.addEventListener('click', () => this.drawManger.start('Rectangle', deep.clone(this.lastFeaturePropertiesCache)));
-        btnCircle.addEventListener('click', () => this.drawManger.start('Circle', deep.clone(this.lastFeaturePropertiesCache)));
+        // btnCircle.addEventListener('click', () => this.drawManger.start('Circle', deep.clone(this.lastFeaturePropertiesCache)));
+        btnCircle.addEventListener('click', () => { this.drawManger.start('Circle', deep.clone(this.lastFeaturePropertiesCache)) });
 
         const c = dom.createHtmlElement('div', ["jas-flex-center", "jas-ctrl-marker-btns-container"]);
-        c.append(btnPoint, btnLine, btnPolygon,btnRectangle,btnCircle);
+        c.append(btnPoint, btnLine, btnPolygon, btnRectangle, btnCircle);
 
         return c;
     }
 
     private createHeaderAddLayer() {
-         const div = dom.createHtmlElement('div', ["jas-ctrl-marker-btns-container", "jas-ctrl-marker-item-btn"]);
-        div.innerHTML = new SvgBuilder('add').resize(25, 25).create();
-        div.title = lang.newLayer;
+        // const div = dom.createHtmlElement('div', ["jas-ctrl-marker-btns-container", "jas-ctrl-marker-item-btn"]);
+        const btnAddLayer = dom.createHtmlElement('div', ["jas-ctrl-marker-item-btn"]);
+        const btnSaveLayer = dom.createHtmlElement('div', ["jas-ctrl-marker-item-btn"]);
+        const btnRestoreLayer = dom.createHtmlElement('div', ["jas-ctrl-marker-item-btn"]);
 
-        div.addEventListener('click', () => {
+        // 设置 title
+        btnAddLayer.title = lang.newLayer;
+        btnSaveLayer.title = lang.saveLayer;
+        btnRestoreLayer.title = lang.restoreLayer;
+
+        // 设置 图标
+        btnAddLayer.innerHTML = new SvgBuilder('add').resize(25, 25).create();
+        btnSaveLayer.innerHTML = `<img src="_content/IDSSE.OceanExplorer.Shared/images/save.png"/>`;
+        btnRestoreLayer.innerHTML = `<img src="_content/IDSSE.OceanExplorer.Shared/images/restore.png"/>`;
+
+        btnAddLayer.addEventListener('click', () => {
             const layer: MarkerLayerProperties = {
                 id: creator.uuid(),
-                date: Date.now(),
+                date: Date.now() - 1704038400000,
                 name: lang.newLayer
             }
             createMarkerLayerEditModel(layer, {
@@ -298,9 +356,20 @@ export default class MarkerManager {
                     this.addLayer(layer);
                 }
             })
-        })
+        });
 
-        return div;
+        // oe: 在 typescript/javascript 中调用 .NET 中的函数
+        // dotNetHelper.invokeMethodAsync("TestAlert", "call .NET method in javascript.");
+        // 将图层（图层属性及其上的所有 features）存入数据库
+        btnSaveLayer.addEventListener('click', () => saveLayer());
+        // 从数据库加载图层
+        btnRestoreLayer.addEventListener('click', () => dotNetHelper.invokeMethodAsync("FetchLayers"));
+
+        const c = dom.createHtmlElement('div', ["jas-flex-center", "jas-ctrl-marker-btns-container"]);
+        c.append(btnAddLayer, btnSaveLayer);
+        return c;
+
+        // return div;
     }
 
     search(value?: string) {
@@ -363,7 +432,7 @@ export default class MarkerManager {
     }
 }
 
-abstract class AbstractLinkP<P>{
+abstract class AbstractLinkP<P> {
 
     /**
      *
@@ -501,7 +570,7 @@ class MarkerLayer extends AbstractLinkP<MarkerManager> {
 
             const center = centroid(feature as any).geometry.coordinates as [number, number];
             // 临时禁用
-            // map.easeTo({ center });
+            //map.easeTo({ center });
             const controls = item.createSuffixElement({ editGeometry: true });
             const popupContent = dom.createHtmlElement('div', [], [controls]);
 
@@ -554,13 +623,20 @@ class MarkerLayer extends AbstractLinkP<MarkerManager> {
         this.parent.markerLayers.splice(index, 1);
         this.htmlElement.remove();
         this.map.removeLayerGroup(this.layerGroup.id);
+        // oe: 删除图层
+        layersToDeleted.push({ id: this.properties.id, name: this.properties.name });
+        console.log(`将从数据库中删除图层：${this.properties.id}:${this.properties.name}`);
     }
 
     updateDataSource() {
         (this.map.getSource(this.properties.id) as mapboxgl.GeoJSONSource)
             .setData({ type: 'FeatureCollection', features: this.items.map(x => x.feature) });
     }
-
+    // oe: 
+    setDataSource(geojson: any) {
+        (this.map.getSource(this.properties.id) as mapboxgl.GeoJSONSource)
+            .setData(geojson);
+    }
     collapse(value: boolean) {
         if (value) {
             this.arrow.classList.remove("jas-collapse-active");
@@ -599,7 +675,7 @@ class MarkerLayer extends AbstractLinkP<MarkerManager> {
 
         const suffix = dom.createHtmlElement('div', ['jas-ctrl-marker-suffix', 'jas-ctrl-hidden']);
 
-        // 用于控制以 this.properties.name 命名的图层，这样本图层可不设置 markerOptions.featureCollection.features
+        // oe: 用于控制以 this.properties.name 命名的图层，这样该图层可不设置 markerOptions.featureCollection.features
         let nameLayer = this.map.getLayer(this.properties.name);
         // 基础图层禁用编辑/导入/导出/删除按钮
         if (!nameLayer) {
@@ -726,22 +802,31 @@ class MarkerLayer extends AbstractLinkP<MarkerManager> {
         const uneye = svgBuilder.change('uneye').create();
 
         const visible = dom.createHtmlElement('div', ["jas-ctrl-marker-suffix-item"]);
-        visible.innerHTML = eye;
+
+        // oe: 对于基础图层（海岸线、专属经济区）通过设置 show 属性来控制图层的显隐
+        let nameLayer = this.map.getLayer(this.properties.name);
+        if (nameLayer) {
+            let visibility = this.map.getLayoutProperty(this.properties.name, "visibility");
+            visible.innerHTML = visibility === "visible" ? eye : uneye;
+        }
+        else
+            visible.innerHTML = eye;
 
         visible.addEventListener('click', () => {
             const isEye = visible.innerHTML === eye;
             visible.innerHTML = isEye ? uneye : eye;
             this.layerGroup.show = !isEye;
 
-            // 用于控制以 this.properties.name 命名的图层，这样本图层可不设置 markerOptions.featureCollection.features
+            // oe: 用于控制以 this.properties.name 命名的图层，即基础图层（海岸线、专属经济区），这样该图层可不设置 markerOptions.featureCollection.features，显隐功能直接应用于图层
             let nameLayer = this.map.getLayer(this.properties.name);
             if (nameLayer)
                 this.map.setLayoutProperty(this.properties.name, "visibility", this.layerGroup.show ? "visible" : "none");
         });
 
         this.setGeometryVisible = (value: boolean) => {
-            visible.innerHTML = value ? eye : uneye;
-            this.layerGroup.show = value;
+            // oe: 对于基础图层（海岸线、专属经济区）已通过设置 show 属性来控制图层的显隐
+            // visible.innerHTML = value ? eye : uneye;
+            // this.layerGroup.show = value;
         }
 
         visible.style.cursor = "pointer";

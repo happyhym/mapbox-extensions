@@ -117,7 +117,7 @@ export class SwitchMapControl extends SwitchLayerBaseControl {
       type: "raster",
       source: {
         type: 'raster',
-        tiles: [`${window.location.protocol}//${window.location.hostname}:9802/tiles/geoserver/gwc/service/wmts/rest/ne:gmrt_20231018/5/EPSG:900913/EPSG:900913:{z}/{y}/{x}?format=image/jpeg`],
+        tiles: [`${window.location.protocol}//${window.location.hostname}:9801/tiles/geoserver/gwc/service/wmts/rest/ne:gmrt_20231018/5/EPSG:900913/EPSG:900913:{z}/{y}/{x}?format=image/jpeg`],
         // tiles: [`https://api.mapbox.com/v4/mapbox.satellite/{z}/{x}/{y}.png?access_token=${mapboxgl.accessToken}`],
         tileSize: 256
       },

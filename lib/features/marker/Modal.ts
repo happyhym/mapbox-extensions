@@ -5,6 +5,7 @@ import { getMapMarkerSpriteImages } from "./symbol-icon";
 import Exporter from "./exporter/Exporter";
 import { FileType, export_converters } from "./exporter/ExportConverter";
 import { TCoordConvertOptions, TCoordConverterType } from '../../common/proj';
+import { PositionOptions } from 'mapbox-gl';
 
 const { SvgBuilder } = svg;
 const { lang } = language;
@@ -82,6 +83,20 @@ export function createConfirmModal(options: ConfirmModalOptions) {
     cancleBtn.innerText = lang.cancel;
 
     confirmBtn.addEventListener('click', () => {
+        // oe: 判断是否选择了图层和输入了标注名称
+        let selectLayerName = document.getElementById("selectLayerName") as HTMLInputElement;
+        if (selectLayerName?.value?.trim() === "") {
+            alert("请选择图层");
+            selectLayerName.focus();
+            return;
+        }
+        let inputFeatureName = document.getElementById("inputFeatureName") as HTMLInputElement;
+        if (inputFeatureName?.value?.trim() === "") {
+            alert("请输入标注名称");
+            inputFeatureName.focus();
+            return;
+        }
+
         options.onConfirm?.call(undefined);
         remove();
     });
@@ -228,6 +243,35 @@ function makeCIBEFunc(onPropChange?: <T>(v: T) => void) {
     }
 }
 
+function makeTextareaFunc(onPropChange?: <T>(v: T) => void) {
+    return function createInputBindingElement<T>(v: T, k: keyof T, config?: (element: HTMLTextAreaElement) => void) {
+        const textarea = dom.createHtmlElement('textarea', ['jas-input']);
+        textarea.value = (v as any)[k] as string;
+        config?.call(undefined, textarea);
+        textarea.classList.add(textarea.type);
+
+        textarea.addEventListener('change', e => {
+            const value = (e.target as any).value;
+            if (textarea.type === 'number') {
+                const n = Number.parseFloat(value);
+
+                // 超出限定 数据还原不执行更新操作
+                // oe: 暂不检查
+                // if (n > Number.parseFloat(textarea.max) || n < Number.parseFloat(textarea.min)) {
+                //     textarea.value = (v as any)[k] as string;
+                //     return;
+                // }
+                v[k] = n as any;
+            } else
+                v[k] = value;
+
+            onPropChange?.call(undefined, v);
+        });
+
+        return textarea;
+    }
+}
+
 function makeColorInputFunc(onPropChange?: <T>(v: T) => void) {
     const cinFunc = makeCIBEFunc(onPropChange);
     return function createColorInputBindingElement<T>(v: T, k: keyof T) {
@@ -264,7 +308,10 @@ export function createMarkerLayerEditModel(layer: MarkerLayerProperties, options
 
     content.append(lang.nameText, createInputBindingElement(layer, 'name', input => {
         input.type = 'text';
-        input.maxLength = 12;
+        // oe: 长度有12改为32
+        input.maxLength = 32;
+        // oe: 添加 name 属性用于判断用户是否填写了标注名称
+        input.id = "inputFeatureName";
     }));
 
     createConfirmModal({
@@ -286,9 +333,11 @@ export function createFeaturePropertiesEditModal(
         layers: MarkerLayerProperties[],
         onPropChange?(): void
     }) {
-
     const createInputBindingElement = makeCIBEFunc(options.onPropChange);
     const createColorBindingElement = makeColorInputFunc(options.onPropChange);
+
+    // oe: 添加 textarea 坐标编辑框
+    const createTextareaBindingElement = makeTextareaFunc(options.onPropChange);
 
     function createSelectBindingElement<T>(v: T, k: keyof T, config?: (element: HTMLSelectElement) => void) {
         const input = dom.createHtmlElement('select', ['jas-select']);
@@ -315,15 +364,16 @@ export function createFeaturePropertiesEditModal(
     const content = dom.createHtmlElement('div', ['jas-modal-content-edit']);
 
     //#region 添加图层选择
-
+    // oe: 禁止在专属经济区、海岸线、船舶位置和船舶轨迹图层创建元素
     if (options.mode === 'create') {
         content.append(dom.createHtmlElement('div',
             ['jas-modal-content-edit-item'],
             [dom.createHtmlElement('label', [], [lang.chooseLayer]), createSelectBindingElement(properties, 'layerId', x => {
-                options.layers.forEach(l => {
+                options.layers.filter(l => l.name != "专属经济区" && l.name != "海岸线" && l.name != "船舶位置" && l.name != "船舶轨迹").forEach(l => {
                     x.innerHTML += `<option value="${l.id}">${l.name}</option>`
                 });
                 x.value = properties.layerId;
+                x.id = "selectLayerName";
             })]))
     }
     //#endregion
@@ -331,8 +381,140 @@ export function createFeaturePropertiesEditModal(
         ['jas-modal-content-edit-item'],
         [dom.createHtmlElement('label', [], [lang.markerName]), createInputBindingElement(properties, 'name', input => {
             input.type = 'text';
-            input.maxLength = 12;
+            // oe: 长度有12改为32
+            input.maxLength = 32;
+            // oe: 添加 name 属性用于判断用户是否填写了标注名称
+            input.id = "inputFeatureName";
         })]));
+
+    // oe: 添加多行文本框，显示鼠标点击的坐标点，允许用户复制或粘贴新的坐标点
+    // 格式化 coordinates 为行模式（一行一组坐标，格式：lon,lat）coordinateList
+    let setCoordinateList = (f: MarkerFeatureType) => {
+        let coords = [];
+        const props = f.properties;
+        switch (f.geometry.type) {
+            case "Point":
+                coords.push(f.geometry.coordinates)
+                break;
+            case "MultiPoint":
+                f.geometry.coordinates.forEach(x => {
+                    coords.push(x)
+                })
+                break;
+            case "LineString":
+                f.geometry.coordinates.forEach(x => {
+                    coords.push(x)
+                })
+                // f.geometry.coordinates = [
+                //     [
+                //         117.9203664621516,
+                //         17.385948782362917
+                //     ],
+                //     [
+                //         116.42009972752288,
+                //         16.533380179649114
+                //     ]
+                // ];
+                break;
+            case "MultiLineString":
+                f.geometry.coordinates.forEach(x => {
+                    coords.push(...x)
+                })
+                break;
+            case "Polygon":
+                f.geometry.coordinates.forEach(x => {
+                    coords.push(...x)
+                })
+                break;
+            case "MultiPolygon":
+                f.geometry.coordinates.forEach(x => {
+                    x.forEach(y => {
+                        coords.push(...y)
+                    });
+                })
+                break;
+        }
+        let lines = "";
+        for (let p of coords)
+            lines = lines.concat(`${p[0].toFixed(6)},${p[1].toFixed(6)}\n`)
+        // 给 f.properties.coordinateList 赋值，textarea 绑定到 f.properties.coordinateList，coordinateList 也将作为 f.properties 的一部分持久化
+        f.properties.coordinateList = lines;
+        return lines;
+    }
+    // 将行模式（一行一组坐标，格式：lon,lat）的 coordinateList 赋值给 coordinates（实现用户粘贴坐标的功能）
+    let updateCoordinates = (f: MarkerFeatureType) => {
+        // 清空原 coordinates
+        switch (f.geometry.type) {
+            case "Point":
+                f.geometry.coordinates = [];
+                break;
+            case "MultiPoint":
+                f.geometry.coordinates=[];
+                break;
+            case "LineString":
+                f.geometry.coordinates=[];
+                break;
+            // case "MultiLineString":
+            //     f.geometry.coordinates.forEach(x => {
+            //         coords.push(...x)
+            //     })
+            //     break;
+            case "Polygon":
+                f.geometry.coordinates[0]=[];
+                break;
+            // case "MultiPolygon":
+            //     f.geometry.coordinates.forEach(x => {
+            //         x.forEach(y => {
+            //             coords.push(...y)
+            //         });
+            //     })
+            //     break;
+        }
+        // 重新赋值（可通过判断 textarea 内容是否变化决定是否重新赋值）
+        f.properties.coordinateList?.split("\n").forEach((line) => {
+            if (line.trim() === "")
+                return;
+            let c = line.split(",");
+            // console.log(line);
+            // console.log(f.geometry.type);
+            // console.log(`${c[0]}--${c[1]}`);
+            switch (f.geometry.type) {
+                case "Point":
+                    // console.log([Number(c[0]), Number(c[1])]);
+                    // console.log(f.geometry.coordinates);
+                    f.geometry.coordinates = [Number(c[0]), Number(c[1])];
+                    break;
+                case "MultiPoint":
+                    f.geometry.coordinates.push([Number(c[0]), Number(c[1])]);
+                    break;
+                case "LineString":
+                    f.geometry.coordinates.push([Number(c[0]), Number(c[1])]);
+                    break;
+                // case "MultiLineString":
+                //     f.geometry.coordinates.forEach(x => {
+                //         coords.push(...x)
+                //     })
+                //     break;
+                case "Polygon":
+                    f.geometry.coordinates[0].push([Number(c[0]), Number(c[1])]);
+                    break;
+                // case "MultiPolygon":
+                //     f.geometry.coordinates.forEach(x => {
+                //         x.forEach(y => {
+                //             coords.push(...y)
+                //         });
+                //     })
+                //     break;
+            }
+        });
+    }
+    setCoordinateList(feature);
+    content.append(dom.createHtmlElement('div',
+        ['jas-modal-content-edit-item'],
+        [dom.createHtmlElement('label', [], ["坐标列表"]), createTextareaBindingElement(properties, 'coordinateList', textarea => {
+            textarea.rows = 5;
+        })]));
+
 
 
     content.append(dom.createHtmlElement('div', ['jas-modal-content-edit-header'], [lang.word]));
@@ -462,6 +644,13 @@ export function createFeaturePropertiesEditModal(
             options.onCancel?.call(undefined);
             options.onPropChange?.call(undefined);
         },
-        onConfirm: options.onConfirm
+        onConfirm: () => {
+            // oe: 将行模式（一行一组坐标，格式：lon,lat）的 coordinateList 赋值给 coordinates（实现用户粘贴坐标的功能）
+            //alert(feature.properties.coordinateList);
+            updateCoordinates(feature);
+
+            options.onConfirm?.call(feature);
+        }
+        //onConfirm: options.onConfirm
     })
 }

@@ -13,6 +13,7 @@ type MapBoxClickEvent = mapboxgl.MapMouseEvent & mapboxgl.EventData
 
 interface DrawBaseOptions {
     onDrawFinish: (draw: DrawBase<GeoJSON.Geometry>, flush: () => void) => void
+    onPasteStart: (draw: DrawBase<GeoJSON.Geometry>, flush: () => void) => void
 }
 
 abstract class DrawBase<T extends GeoJSON.Geometry> {
@@ -50,7 +51,7 @@ abstract class DrawBase<T extends GeoJSON.Geometry> {
         this.layerGroup = new LayerGroup(`draw-marker-${this.id}`, map, layers);
     }
 
-    start(properties: MarkerFeatrueProperties) {
+    start(properties: MarkerFeatrueProperties) {       
         this.end();
 
         this.map.doubleClickZoom.disable();
@@ -88,7 +89,7 @@ class DrawPoint extends DrawBase<GeoJSON.Point> {
                 'text-size': ['get', 'textSize', ['get', 'style']],
                 'icon-image': ['get', 'pointIcon', ['get', 'style']],
                 'icon-size': ['get', 'pointIconSize', ['get', 'style']],
-                'text-justify': 'auto',
+                'text-justify': 'left',
                 'text-variable-anchor': ['left', 'right', 'top', 'bottom'],
                 'text-radial-offset': ['*', ['get', 'pointIconSize', ['get', 'style']], 4]
             },
@@ -112,7 +113,7 @@ class DrawPoint extends DrawBase<GeoJSON.Point> {
                 properties: {
                     ...properties,
                     id: creator.uuid(),
-                    date: Date.now(),
+                    date: Date.now() - 1704038400000,
                 }
             });
 
@@ -201,7 +202,7 @@ class DrawLineString extends DrawBase<GeoJSON.LineString> {
                     properties: {
                         ...properties,
                         id: creator.uuid(),
-                        date: Date.now()
+                        date: Date.now() - 1704038400000
                     }
                 });
 
@@ -357,7 +358,7 @@ class DrawPolygon extends DrawBase<GeoJSON.Polygon> {
                     properties: {
                         ...properties,
                         id: creator.uuid(),
-                        date: Date.now()
+                        date: Date.now() - 1704038400000
                     }
                 });
 
@@ -473,8 +474,8 @@ class DrawRectangle extends DrawBase<GeoJSON.Polygon> {
                 }
             },
             paint: {
-                'line-width': 1,
-                'line-color': "#4aa1eb"
+                "line-width": 1,
+                "line-color": "blue"
             }
         }];
     }
@@ -504,30 +505,30 @@ class DrawRectangle extends DrawBase<GeoJSON.Polygon> {
                 properties: {}
             });
 
-            if (coords.length === 2) {
-                (this.map.getSource(this.id + "_outline_addion") as mapboxgl.GeoJSONSource).setData({
-                    type: 'Feature',
-                    geometry: { type: 'LineString', coordinates: coords },
-                    properties: {}
-                })
-            }
+            // if (coords.length === 2) {
+            //     (this.map.getSource(this.id + "_outline_addion") as mapboxgl.GeoJSONSource).setData({
+            //         type: 'Feature',
+            //         geometry: { type: 'LineString', coordinates: coords },
+            //         properties: {}
+            //     })
+            // }
 
-            if (coords.length > 1)
-                coords.pop();
+            // if (coords.length > 1)
+            //     coords.pop();
 
-            if (coords.length > 1) {
-                coords.pop();
-            }
+            // if (coords.length > 1) {
+            //     coords.pop();
+            // }
 
-            coords.push(coord);
-            if (coords.length > 2)
-                coords.push(coords[0]);
-            else
-                (this.map.getSource(this.id + "_outline_addion") as mapboxgl.GeoJSONSource).setData({
-                    type: 'Feature',
-                    geometry: { type: 'LineString', coordinates: coords },
-                    properties: {}
-                })
+            // coords.push(coord);
+            // if (coords.length > 2)
+            //     coords.push(coords[0]);
+            // else
+            //     (this.map.getSource(this.id + "_outline_addion") as mapboxgl.GeoJSONSource).setData({
+            //         type: 'Feature',
+            //         geometry: { type: 'LineString', coordinates: coords },
+            //         properties: {}
+            //     })
 
             this.update();
         }
@@ -560,7 +561,7 @@ class DrawRectangle extends DrawBase<GeoJSON.Polygon> {
                     properties: {
                         ...properties,
                         id: creator.uuid(),
-                        date: Date.now()
+                        date: Date.now() - 1704038400000
                     }
                 });
 
@@ -571,7 +572,7 @@ class DrawRectangle extends DrawBase<GeoJSON.Polygon> {
                 const coords = this.currentFeature.geometry.coordinates[0];
                 // if (coords.length > 2)
                 coords.pop(); //删除第一个点
-                coords.push(coord);
+                //coords.push(coord);
                 // coords.push(coords[0]);
 
                 var rightTopCoords = [coord[0], starCoords[1]];
@@ -696,6 +697,12 @@ class DrawCircle extends DrawBase<GeoJSON.Polygon> {
     }
 
     protected onStart(properties: MarkerFeatrueProperties): void {
+        // alert("oe:1");
+        // // oe:
+        // this.options.onPasteStart(this, () => {
+        //     this.end();
+        // });
+        // alert("oe:2");
 
         this.map.setPaintProperty(this.id + "_outline_addion", "line-color", properties.style.polygonOutlineColor);
         this.map.setPaintProperty(this.id + "_outline_addion", "line-width", properties.style.polygonOutlineWidth);
@@ -744,7 +751,7 @@ class DrawCircle extends DrawBase<GeoJSON.Polygon> {
             // 添加中间点
             const centerPoint = [(starCoords[0] + coord[0]) / 2, (starCoords[1] + coord[1]) / 2];
             const segment = getDistanceString({ type: 'LineString', coordinates: [coord, starCoords] });
-            console.log(`${segment}`);
+            //console.log(`${segment}`);
 
 
 
@@ -804,7 +811,7 @@ class DrawCircle extends DrawBase<GeoJSON.Polygon> {
                     properties: {
                         ...properties,
                         id: creator.uuid(),
-                        date: Date.now()
+                        date: Date.now() - 1704038400000
                     }
                 });
 

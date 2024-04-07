@@ -100,13 +100,13 @@ const zh: ILanguageOptions = {
     cancel: "取消",
 
     word: "文字",
-    point: "点",
+    point: "单击地图添加点",
     pointIcon: '图标',
-    line: "线",
+    line: "单击不同的点添加线，双击结束",
     outline: "轮廓线",
-    polygon: '多边形',
-    rectangle: '矩形',
-    circle:'圆形',
+    polygon: '单击不同的点添加多边形，双击结束',
+    rectangle: '添加矩形',
+    circle:'添加圆形',
 
     edit_graph: '编辑图形',
     area: '面积',

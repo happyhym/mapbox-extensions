@@ -180,6 +180,16 @@ const SvgTemplateInfoMapper = {
         width: 20,
         height: 20
     },
+    save_layer: {
+        template: `<svg width="{w}" height="{h}" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="8375" ><path d="<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--!Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M433.9 129.9l-83.9-83.9A48 48 0 0 0 316.1 32H48C21.5 32 0 53.5 0 80v352c0 26.5 21.5 48 48 48h352c26.5 0 48-21.5 48-48V163.9a48 48 0 0 0 -14.1-33.9zM272 80v80H144V80h128zm122 352H54a6 6 0 0 1 -6-6V86a6 6 0 0 1 6-6h42v104c0 13.3 10.7 24 24 24h176c13.3 0 24-10.7 24-24V83.9l78.2 78.2a6 6 0 0 1 1.8 4.2V426a6 6 0 0 1 -6 6zM224 232c-48.5 0-88 39.5-88 88s39.5 88 88 88 88-39.5 88-88-39.5-88-88-88zm0 128c-22.1 0-40-17.9-40-40s17.9-40 40-40 40 17.9 40 40-17.9 40-40 40z"/></svg>" p-id="8376"></path></svg>`,
+        width: 20,
+        height: 20
+    },
+    restore_layer: {
+        template: `<svg width="{w}" height="{h}" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="8375" ><path d="M123.1 98.3c-14.3 0-25.9 11.6-25.9 25.9v526.6l277.5 277.3h526.4c14.3 0 25.9-11.6 25.9-25.9v-778c0-14.3-11.6-25.9-25.9-25.9h-778z m283.2 767.6L159.4 619.2v-0.2h247.8v246.9h-0.9z m456.5-2H469.4V582.7c0-14.3-11.6-25.9-25.9-25.9H161.4V162.5h701.4v701.4z" p-id="8376"></path></svg>`,
+        width: 20,
+        height: 20
+    },
     eye: {
         template: `<svg width="{w}" height="{h}" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="9833"><path d="M512 832c-213.888 0-384.512-106.688-512-320 129.408-213.312 300.032-320 512-320 211.968 0 382.592 106.688 512 320-127.488 213.312-298.112 320-512 320z m0-64a256 256 0 1 0 0-512 256 256 0 0 0 0 512z m0-128a128 128 0 1 0 0-256 128 128 0 0 0 0 256z" fill="#515151" p-id="9834"></path></svg>`,
         width: 20,
