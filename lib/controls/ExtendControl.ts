@@ -52,7 +52,12 @@ export abstract class AbstractExtendControl implements mapboxgl.IControl {
             const { title, closeable, titleSlot } = this.options;
             const contianerHeader = dom.createHtmlElement('div', ["jas-ctrl-extend-container-header"]);
             if (title) {
-                contianerHeader.append(dom.createHtmlElement('div', ["jas-ctrl-extend-container-header-title"], [title]));
+                // oe: 自定义标题，已在 Index 页面添加：<div class="panel">...</div>
+                // const headTitle = dom.createHtmlElement('div', ["jas-ctrl-extend-container-header-title"]);
+                // headTitle.innerHTML = `<img style="height:25px" src="_content/IDSSE.OceanExplorer.Shared/images/OUGP.png"/> <strong class="d-inline-block mb-2 text-primary">${title}</strong>`;
+                // contianerHeader.append(headTitle);
+                // // contianerHeader.append(dom.createHtmlElement('div', ["jas-ctrl-extend-container-header-title"], [title]));
+                // // oe: contianerHeader.append(dom.createHtmlElement('div', ["jas-ctrl-extend-container-header-title"], ["航次规划辅助工具"]));
             }
 
             if (titleSlot) {
@@ -110,7 +115,7 @@ export abstract class AbstractExtendControl implements mapboxgl.IControl {
         var siderbar = document.getElementById("gisSidebar");
         if (siderbar) {
             this.element.style.display = "none";
-            // 图层管理改为在左侧边栏显示
+            // oe: 图层管理改为在左侧边栏显示
             siderbar.appendChild(desktopContainer);
         }
         else
