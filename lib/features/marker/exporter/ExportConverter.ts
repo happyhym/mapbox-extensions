@@ -20,7 +20,7 @@ import { TCoordConvertOptions, coordConverter } from '../../../common/proj';
 import { lang } from '../../../common/lang';
 
 
-export type FileType = 'dxf' | 'kml' | 'geojson' | 'csv';
+export type FileType = 'txt' | 'geojson' | 'kml' | 'dxf' | 'csv';
 
 export type ConverterOptions = {
     coordConvertOptions?: TCoordConvertOptions
@@ -185,6 +185,53 @@ export class GeoJsonConverter implements IExportConverter {
     }
 }
 
+export class TxtConverter implements IExportConverter {
+    readonly type = 'txt';
+    convert(geojson: ExportGeoJsonType): string {
+        let coords: any[] = [];
+        const featrues = geojson.type === "Feature" ? [geojson] : geojson.features;
+        featrues.forEach(f => {
+            const props = f.properties;
+            switch (f.geometry.type) {
+                case "Point":
+                    coords.push(f.geometry.coordinates)
+                    break;
+                case "MultiPoint":
+                    f.geometry.coordinates.forEach(x => {
+                        coords.push(x)
+                    })
+                    break;
+                case "LineString":
+                    f.geometry.coordinates.forEach(x => {
+                        coords.push(x)
+                    })
+                    break;
+                case "MultiLineString":
+                    f.geometry.coordinates.forEach(x => {
+                        coords.push(...x)
+                    })
+                    break;
+                case "Polygon":
+                    f.geometry.coordinates.forEach(x => {
+                        coords.push(...x)
+                    })
+                    break;
+                case "MultiPolygon":
+                    f.geometry.coordinates.forEach(x => {
+                        x.forEach(y => {
+                            coords.push(...y)
+                        });
+                    })
+                    break;
+            }
+        });
+        let data = "";
+        for (let p of coords)
+            data = data.concat(`${p[0].toFixed(6)},${p[1].toFixed(6)}\n`)
+        return data;
+    }
+}
+
 export class CSVConverter implements IExportConverter {
     type: FileType = "csv";
 
@@ -207,4 +254,4 @@ export class CSVConverter implements IExportConverter {
     }
 }
 
-export const export_converters = [new DxfConverter(), new GeoJsonConverter(), new KmlConverter(), new CSVConverter()];
+export const export_converters = [new TxtConverter(), new GeoJsonConverter(), new KmlConverter(), new DxfConverter(), new CSVConverter()];
