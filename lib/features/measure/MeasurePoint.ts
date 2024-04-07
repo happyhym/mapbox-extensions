@@ -61,7 +61,7 @@ export default class MeasurePoint extends MeasureBase {
             "text-field": ['get', 'coord'],
             'text-offset': [0, 2.5],
             'text-size': 12,
-            'text-justify': 'auto',
+            'text-justify': 'left',
             'text-radial-offset': 1.8,
             'text-variable-anchor': ['top', 'bottom', 'left', 'right'],
             "text-font": ["literal", ['Arial Unicode MS Regular', 'DIN Offc Pro Italic', 'Open Sans Regular']],

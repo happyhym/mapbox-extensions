@@ -115,14 +115,19 @@ export class MeasureControl implements mapboxgl.IControl {
 
         this.measures.forEach((value, key) => {
             const btn = this.createButton(value.svg, this.createClickMeasureButtonHandler(map, key));
+            // oe: 设置 title
+            btn.title = key === "Point" ? "获取鼠标点击处经纬度和高程" : key === "LineString" ? "测量线段长度" : key === "Polygon" ? "测量面积" : "";
             value.controlElement = btn;
             this.element.append(btn);
         })
 
-        this.element.append(this.createButton(new SvgBuilder("clean").create(), () => {
+        // oe: 设置 title
+        const cleanBtn = this.createButton(new SvgBuilder("clean").create(), () => {
             this.measures.forEach(m => m.measure.clear());
             this.options.onClear?.call(undefined);
-        }));
+        });
+        cleanBtn.title = "清除测量图层";
+        this.element.append(cleanBtn);
 
         return this.element;
     }
