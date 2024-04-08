@@ -295,11 +295,11 @@ export default class MarkerManager {
         const btnCircle = dom.createHtmlElement('div', ["jas-ctrl-marker-item-btn"]);
 
         // 设置 title
-        btnPoint.title = lang.point;
-        btnLine.title = lang.line;
-        btnPolygon.title = lang.polygon;
-        btnRectangle.title = lang.rectangle;
-        btnCircle.title = lang.circle;
+        btnPoint.title = "添加点"; // lang.point;
+        btnLine.title = "单击添加线，双击结束"; // lang.line;
+        btnPolygon.title = "单击添加多边形，双击结束"; // lang.polygon;
+        btnRectangle.title = "添加矩形"; // lang.rectangle;
+        btnCircle.title = "添加圆形"; // lang.circle;
 
         // 设置 图标
         const svgBuilder = new SvgBuilder('marker_point');
