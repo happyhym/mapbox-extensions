@@ -28,9 +28,11 @@ export interface MarkerFeatrueProperties {
     // lon2,lat2
     // ...
     coordinateList?: string,
-    // oe: 是圆形时保存圆心和半径
+    // oe: 是圆形时，保存圆心和半径
     centre?: string,
-    radius?: number
+    radius?: number,
+    // 单位换算比例，以 km 为1，则 nm=1.852、m=0.001
+    scale?: number
 }
 
 export interface MarkerLayerProperties {

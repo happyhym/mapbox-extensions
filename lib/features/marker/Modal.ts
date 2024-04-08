@@ -500,7 +500,7 @@ export function createFeaturePropertiesEditModal(
             //     break;
         }
         // 是圆的话通过圆心和半径计算拐点坐标
-        if (f.properties?.centre && f.properties?.radius && f.geometry.type === "Polygon") {
+        if (f.properties?.centre && f.properties?.radius && f.properties.scale && f.geometry.type === "Polygon") {
             // var centre_radius = f.properties.coordinateList?.split("\n");
             // // 第一行是圆心的经纬度
             // var centre = centre_radius![0].split(",");
@@ -518,7 +518,7 @@ export function createFeaturePropertiesEditModal(
 
             // console.log(`${f.properties.centre}--${f.properties.radius}`);
             var centre = f.properties.centre?.split(",");
-            f.geometry.coordinates[0] = getCircleCoordinates([Number(centre[0]), Number(centre[1])], f.properties.radius);
+            f.geometry.coordinates[0] = getCircleCoordinates([Number(centre[0]), Number(centre[1])], f.properties.radius * f.properties.scale);
         }
         else
             // 重新赋值（可通过判断 textarea 内容是否变化决定是否重新赋值）
@@ -579,17 +579,23 @@ export function createFeaturePropertiesEditModal(
                 input.title = "格式：lng,lat";
             })]));
     // oe: 半径编辑文本框
-    if (properties?.radius)
+    if (properties?.radius) {
         content.append(dom.createHtmlElement('div',
             ['jas-modal-content-edit-item'],
-            [dom.createHtmlElement('label', [], ["半径（km）"]), createInputBindingElement(properties, 'radius', input => {
+            [dom.createHtmlElement('label', [], ["半径"]), createInputBindingElement(properties, 'radius', input => {
                 input.type = 'text';
                 input.maxLength = 12;
                 // oe: 添加 name 属性用于判断用户是否填写了半径
                 input.id = "featureRadiusRequired";
-                input.title = "圆半径，单位：km";
+                input.title = "圆半径大小";
+            }), dom.createHtmlElement('select', ['jas-select'], [], {
+                onChange: (_, element) => { feature.properties.scale = element.selectedOptions[0].value as any; },
+                onInit: element => {
+                    element.innerHTML = ([{ name: "km", scale: 1 }, { name: "nm", scale: 1.852 }, { name: "m", scale: 0.001 }] as Array<any>)
+                        .map(x => `<option value="${x.scale}" ${x.scale == feature.properties.scale ? 'selected' : ''}>${x.name}</option>`).join('');
+                }
             })]));
-
+    }
 
     content.append(dom.createHtmlElement('div', ['jas-modal-content-edit-header'], [lang.word]));
 

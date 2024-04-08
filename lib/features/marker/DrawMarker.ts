@@ -729,6 +729,7 @@ class DrawCircle extends DrawBase<GeoJSON.Polygon> {
                 //points.concat([moveCoords]);
 
                 var line = turf.lineString(_points);
+                // 单位默认为：kilometers
                 var radius = turf.length(line);
                 if (radius < 1) {
                     // _pixelRadius = len
@@ -747,13 +748,14 @@ class DrawCircle extends DrawBase<GeoJSON.Polygon> {
                         geometry: { type: 'LineString', coordinates: circleCoords },
                         properties: {
                             centre: starCoords,
-                            radius: radius
+                            radius: radius,
+                            scale: 1
                         }
                     });
 
                     // oe: 保存圆心经纬度坐标和半径
-                    this.currentFeature!.properties!.centre=`${starCoords[0].toFixed(6)},${starCoords[1].toFixed(6)}`;
-                    this.currentFeature!.properties!.radius=radius;
+                    this.currentFeature!.properties!.centre = `${starCoords[0].toFixed(6)},${starCoords[1].toFixed(6)}`;
+                    this.currentFeature!.properties!.radius = radius;
                 }
             }
             // 添加中间点
@@ -941,7 +943,7 @@ export default class DrawManager {
     }
 }
 
-export function getCircleCoordinates(center: number[], radiusInKm: number, points: number = 64): number[][]{
+export function getCircleCoordinates(center: number[], radiusInKm: number, points: number = 64): number[][] {
     var coords = {
         latitude: center[1],
         longitude: center[0]
