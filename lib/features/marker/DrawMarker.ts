@@ -51,7 +51,7 @@ abstract class DrawBase<T extends GeoJSON.Geometry> {
         this.layerGroup = new LayerGroup(`draw-marker-${this.id}`, map, layers);
     }
 
-    start(properties: MarkerFeatrueProperties) {       
+    start(properties: MarkerFeatrueProperties) {
         this.end();
 
         this.map.doubleClickZoom.disable();
@@ -729,29 +729,37 @@ class DrawCircle extends DrawBase<GeoJSON.Polygon> {
                 //points.concat([moveCoords]);
 
                 var line = turf.lineString(_points);
-                var len = turf.length(line);
-                if (len < 1) {
+                var radius = turf.length(line);
+                if (radius < 1) {
                     // _pixelRadius = len
                     //m
                     // len = Math.round(len * 1000);
                     //  map.getSource('circle').setData(createGeoJSONCircle(starCoords, len));
                 } else {
                     //km
-                    len = Number(len.toFixed(2));
+                    radius = Number(radius.toFixed(3));
+                    // console.log(`圆心,半径：${starCoords},${radius}`);
                     // _pixelRadius = len
                     //(this.map.getSource(this.id + "_circle") as mapboxgl.GeoJSONSource).setData(getCircleCoordinates(starCoords, len));
-                    circleCoords = getCircleCoordinates(starCoords, len);
+                    circleCoords = getCircleCoordinates(starCoords, radius);
                     (this.map.getSource(this.id + "_circle") as mapboxgl.GeoJSONSource).setData({
                         type: 'Feature',
                         geometry: { type: 'LineString', coordinates: circleCoords },
-                        properties: {}
+                        properties: {
+                            centre: starCoords,
+                            radius: radius
+                        }
                     });
+
+                    // oe: 保存圆心经纬度坐标和半径
+                    this.currentFeature!.properties!.centre=`${starCoords[0].toFixed(6)},${starCoords[1].toFixed(6)}`;
+                    this.currentFeature!.properties!.radius=radius;
                 }
             }
             // 添加中间点
-            const centerPoint = [(starCoords[0] + coord[0]) / 2, (starCoords[1] + coord[1]) / 2];
-            const segment = getDistanceString({ type: 'LineString', coordinates: [coord, starCoords] });
-            //console.log(`${segment}`);
+            // const centerPoint = [(starCoords[0] + coord[0]) / 2, (starCoords[1] + coord[1]) / 2];
+            // const segment = getDistanceString({ type: 'LineString', coordinates: [coord, starCoords] });
+            // console.log(`${centerPoint},${segment}`);
 
 
 
@@ -863,28 +871,6 @@ class DrawCircle extends DrawBase<GeoJSON.Polygon> {
             })
         }
 
-        const getCircleCoordinates = (center: number[], radiusInKm: number, points: number = 64): number[][] => {
-            var coords = {
-                latitude: center[1],
-                longitude: center[0]
-            };
-            var km = radiusInKm;
-            var ret = [];
-            var distanceX = km / (111.320 * Math.cos(coords.latitude * Math.PI / 180));
-            var distanceY = km / 110.574;
-
-            var theta, x, y;
-            for (var i = 0; i < points; i++) {
-                theta = (i / points) * (2 * Math.PI);
-                x = distanceX * Math.cos(theta);
-                y = distanceY * Math.sin(theta);
-
-                ret.push([coords.longitude + x, coords.latitude + y]);
-            }
-            ret.push(ret[0]);
-            return ret;
-        };
-
         const getDistanceString = (line: GeoJSON.LineString) => {
             const length = turfLength({
                 type: 'Feature',
@@ -953,4 +939,26 @@ export default class DrawManager {
             this.map.removeLayerGroup(d.layerGroup.id);
         })
     }
+}
+
+export function getCircleCoordinates(center: number[], radiusInKm: number, points: number = 64): number[][]{
+    var coords = {
+        latitude: center[1],
+        longitude: center[0]
+    };
+    var km = radiusInKm;
+    var ret = [];
+    var distanceX = km / (111.320 * Math.cos(coords.latitude * Math.PI / 180));
+    var distanceY = km / 110.574;
+
+    var theta, x, y;
+    for (var i = 0; i < points; i++) {
+        theta = (i / points) * (2 * Math.PI);
+        x = distanceX * Math.cos(theta);
+        y = distanceY * Math.sin(theta);
+
+        ret.push([coords.longitude + x, coords.latitude + y]);
+    }
+    ret.push(ret[0]);
+    return ret;
 }

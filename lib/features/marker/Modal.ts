@@ -7,6 +7,8 @@ import { FileType, export_converters } from "./exporter/ExportConverter";
 import { TCoordConvertOptions, TCoordConverterType } from '../../common/proj';
 import { PositionOptions } from 'mapbox-gl';
 
+import { getCircleCoordinates } from "./DrawMarker";
+
 const { SvgBuilder } = svg;
 const { lang } = language;
 const { DragBox } = drag;
@@ -84,16 +86,34 @@ export function createConfirmModal(options: ConfirmModalOptions) {
 
     confirmBtn.addEventListener('click', () => {
         // oe: 判断是否选择了图层和输入了标注名称
-        let selectLayerName = document.getElementById("selectLayerName") as HTMLInputElement;
-        if (selectLayerName?.value?.trim() === "") {
+        let layerNameRequired = document.getElementById("layerNameRequired") as HTMLInputElement;
+        if (layerNameRequired?.value?.trim() === "") {
             alert("请选择图层");
-            selectLayerName.focus();
+            layerNameRequired.focus();
             return;
         }
-        let inputFeatureName = document.getElementById("inputFeatureName") as HTMLInputElement;
-        if (inputFeatureName?.value?.trim() === "") {
+        let featureNameRequired = document.getElementById("featureNameRequired") as HTMLInputElement;
+        if (featureNameRequired?.value?.trim() === "") {
             alert("请输入标注名称");
-            inputFeatureName.focus();
+            featureNameRequired.focus();
+            return;
+        }
+        let coordinateListRequired = document.getElementById("coordinateListRequired") as HTMLInputElement;
+        if (coordinateListRequired?.value?.trim() === "") {
+            alert("请输入拐点坐标");
+            coordinateListRequired.focus();
+            return;
+        }
+        let featureCentreRequired = document.getElementById("featureCentreRequired") as HTMLInputElement;
+        if (featureCentreRequired?.value?.trim() === "") {
+            alert("请输入圆心坐标");
+            featureCentreRequired.focus();
+            return;
+        }
+        let featureRadiusRequired = document.getElementById("featureRadiusRequired") as HTMLInputElement;
+        if (featureRadiusRequired?.value?.trim() === "") {
+            alert("请输入圆半径（km）");
+            featureRadiusRequired.focus();
             return;
         }
 
@@ -311,7 +331,7 @@ export function createMarkerLayerEditModel(layer: MarkerLayerProperties, options
         // oe: 长度有12改为32
         input.maxLength = 32;
         // oe: 添加 name 属性用于判断用户是否填写了标注名称
-        input.id = "inputFeatureName";
+        input.id = "featureNameRequired";
     }));
 
     createConfirmModal({
@@ -373,7 +393,7 @@ export function createFeaturePropertiesEditModal(
                     x.innerHTML += `<option value="${l.id}">${l.name}</option>`
                 });
                 x.value = properties.layerId;
-                x.id = "selectLayerName";
+                x.id = "layerNameRequired";
             })]))
     }
     //#endregion
@@ -384,7 +404,7 @@ export function createFeaturePropertiesEditModal(
             // oe: 长度有12改为32
             input.maxLength = 32;
             // oe: 添加 name 属性用于判断用户是否填写了标注名称
-            input.id = "inputFeatureName";
+            input.id = "featureNameRequired";
         })]));
 
     // oe: 添加多行文本框，显示鼠标点击的坐标点，允许用户复制或粘贴新的坐标点
@@ -438,7 +458,16 @@ export function createFeaturePropertiesEditModal(
         for (let p of coords)
             lines = lines.concat(`${p[0].toFixed(6)},${p[1].toFixed(6)}\n`)
         // 给 f.properties.coordinateList 赋值，textarea 绑定到 f.properties.coordinateList，coordinateList 也将作为 f.properties 的一部分持久化
-        f.properties.coordinateList = lines;
+        if (f.properties?.centre && f.properties?.radius) {
+            // 是圆的话显示圆心和半径
+            //var centre = f.properties.centre?.split(",");
+            //f.properties.coordinateList = `${Number(centre[0]).toFixed(6)},${Number(centre[1]).toFixed(6)}\n${f.properties.radius.toFixed(6)}`;
+            f.properties.coordinateList = `${f.properties.centre}\n${f.properties.radius}`;
+        }
+        else {
+            // 其他的显示拐点坐标列表
+            f.properties.coordinateList = lines;
+        }
         return lines;
     }
     // 将行模式（一行一组坐标，格式：lon,lat）的 coordinateList 赋值给 coordinates（实现用户粘贴坐标的功能）
@@ -449,10 +478,10 @@ export function createFeaturePropertiesEditModal(
                 f.geometry.coordinates = [];
                 break;
             case "MultiPoint":
-                f.geometry.coordinates=[];
+                f.geometry.coordinates = [];
                 break;
             case "LineString":
-                f.geometry.coordinates=[];
+                f.geometry.coordinates = [];
                 break;
             // case "MultiLineString":
             //     f.geometry.coordinates.forEach(x => {
@@ -460,7 +489,7 @@ export function createFeaturePropertiesEditModal(
             //     })
             //     break;
             case "Polygon":
-                f.geometry.coordinates[0]=[];
+                f.geometry.coordinates[0] = [];
                 break;
             // case "MultiPolygon":
             //     f.geometry.coordinates.forEach(x => {
@@ -470,51 +499,96 @@ export function createFeaturePropertiesEditModal(
             //     })
             //     break;
         }
-        // 重新赋值（可通过判断 textarea 内容是否变化决定是否重新赋值）
-        f.properties.coordinateList?.split("\n").forEach((line) => {
-            if (line.trim() === "")
-                return;
-            let c = line.split(",");
-            // console.log(line);
-            // console.log(f.geometry.type);
-            // console.log(`${c[0]}--${c[1]}`);
-            switch (f.geometry.type) {
-                case "Point":
-                    // console.log([Number(c[0]), Number(c[1])]);
-                    // console.log(f.geometry.coordinates);
-                    f.geometry.coordinates = [Number(c[0]), Number(c[1])];
-                    break;
-                case "MultiPoint":
-                    f.geometry.coordinates.push([Number(c[0]), Number(c[1])]);
-                    break;
-                case "LineString":
-                    f.geometry.coordinates.push([Number(c[0]), Number(c[1])]);
-                    break;
-                // case "MultiLineString":
-                //     f.geometry.coordinates.forEach(x => {
-                //         coords.push(...x)
-                //     })
-                //     break;
-                case "Polygon":
-                    f.geometry.coordinates[0].push([Number(c[0]), Number(c[1])]);
-                    break;
-                // case "MultiPolygon":
-                //     f.geometry.coordinates.forEach(x => {
-                //         x.forEach(y => {
-                //             coords.push(...y)
-                //         });
-                //     })
-                //     break;
-            }
-        });
+        // 是圆的话通过圆心和半径计算拐点坐标
+        if (f.properties?.centre && f.properties?.radius && f.geometry.type === "Polygon") {
+            // var centre_radius = f.properties.coordinateList?.split("\n");
+            // // 第一行是圆心的经纬度
+            // var centre = centre_radius![0].split(",");
+            // f.properties.centre = [Number(centre[0]), Number(centre[1])];
+            // // 第二行是圆半径（单位：km）
+            // f.properties.radius = Number(centre_radius![1]);
+            // f.geometry.coordinates[0] = getCircleCoordinates(f.properties.centre, f.properties.radius);
+
+            // var centre_radius = f.properties.coordinateList?.split("\n");
+            // // 第一行是圆心的经纬度
+            // var centre = centre_radius![0].split(",");
+            // f.properties.centre = [Number(centre[0]), Number(centre[1])];
+            // // 第二行是圆半径（单位：km）
+            // f.properties.radius = Number(centre_radius![1]);
+
+            // console.log(`${f.properties.centre}--${f.properties.radius}`);
+            var centre = f.properties.centre?.split(",");
+            f.geometry.coordinates[0] = getCircleCoordinates([Number(centre[0]), Number(centre[1])], f.properties.radius);
+        }
+        else
+            // 重新赋值（可通过判断 textarea 内容是否变化决定是否重新赋值）
+            f.properties.coordinateList?.split("\n").forEach((line) => {
+                if (line.trim() === "")
+                    return;
+                let c = line.split(",");
+                switch (f.geometry.type) {
+                    case "Point":
+                        f.geometry.coordinates = [Number(c[0]), Number(c[1])];
+                        break;
+                    case "MultiPoint":
+                        f.geometry.coordinates.push([Number(c[0]), Number(c[1])]);
+                        break;
+                    case "LineString":
+                        f.geometry.coordinates.push([Number(c[0]), Number(c[1])]);
+                        break;
+                    // case "MultiLineString":
+                    //     f.geometry.coordinates.forEach(x => {
+                    //         coords.push(...x)
+                    //     })
+                    //     break;
+                    case "Polygon":
+                        f.geometry.coordinates[0].push([Number(c[0]), Number(c[1])]);
+                        break;
+                    // case "MultiPolygon":
+                    //     f.geometry.coordinates.forEach(x => {
+                    //         x.forEach(y => {
+                    //             coords.push(...y)
+                    //         });
+                    //     })
+                    //     break;
+                }
+            });
     }
     setCoordinateList(feature);
-    content.append(dom.createHtmlElement('div',
-        ['jas-modal-content-edit-item'],
-        [dom.createHtmlElement('label', [], ["坐标列表"]), createTextareaBindingElement(properties, 'coordinateList', textarea => {
-            textarea.rows = 5;
-        })]));
 
+    // oe: 坐标列表文本框
+    if (!properties?.centre && !properties?.radius)
+        content.append(dom.createHtmlElement('div',
+            ['jas-modal-content-edit-item'],
+            [dom.createHtmlElement('label', [], ["拐点坐标"]), createTextareaBindingElement(properties, 'coordinateList', textarea => {
+                textarea.rows = 5;
+                // oe: 添加 name 属性用于判断用户是否填写了坐标列表
+                textarea.id = "coordinateListRequired";
+                textarea.title = "每行一组，格式：lng,lat";
+            })]));
+    // oe: 圆心坐标编辑文本框
+    if (properties?.centre)
+        content.append(dom.createHtmlElement('div',
+            ['jas-modal-content-edit-item'],
+            [dom.createHtmlElement('label', [], ["圆心坐标"]), createInputBindingElement(properties, 'centre', input => {
+                input.type = 'text';
+                // oe: 长度有12改为32
+                input.maxLength = 32;
+                // oe: 添加 name 属性用于判断用户是否填写了圆心经纬度
+                input.id = "featureCentreRequired";
+                input.title = "格式：lng,lat";
+            })]));
+    // oe: 半径编辑文本框
+    if (properties?.radius)
+        content.append(dom.createHtmlElement('div',
+            ['jas-modal-content-edit-item'],
+            [dom.createHtmlElement('label', [], ["半径（km）"]), createInputBindingElement(properties, 'radius', input => {
+                input.type = 'text';
+                input.maxLength = 12;
+                // oe: 添加 name 属性用于判断用户是否填写了半径
+                input.id = "featureRadiusRequired";
+                input.title = "圆半径，单位：km";
+            })]));
 
 
     content.append(dom.createHtmlElement('div', ['jas-modal-content-edit-header'], [lang.word]));

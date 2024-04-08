@@ -27,7 +27,10 @@ export interface MarkerFeatrueProperties {
     // lon1,lat1
     // lon2,lat2
     // ...
-    coordinateList?: string
+    coordinateList?: string,
+    // oe: 是圆形时保存圆心和半径
+    centre?: string,
+    radius?: number
 }
 
 export interface MarkerLayerProperties {
