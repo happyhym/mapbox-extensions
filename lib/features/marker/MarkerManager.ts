@@ -473,6 +473,9 @@ class MarkerLayer extends AbstractLinkP<MarkerManager> {
 
         this.items = layerFeatures.map(f => new MarkerItem(this, map, f, options.markerItemOptions));
 
+        // 图层默认显示
+        this.properties.show ??= true;
+
         map.addSource(this.properties.id, {
             type: 'geojson',
             data: {
@@ -677,8 +680,8 @@ class MarkerLayer extends AbstractLinkP<MarkerManager> {
 
         // oe: 用于控制以 this.properties.name 命名的图层，这样该图层可不设置 markerOptions.featureCollection.features
         let nameLayer = this.map.getLayer(this.properties.name);
-        // 基础图层禁用编辑/导入/导出/删除按钮
-        if (!nameLayer) {
+        // 基础图层（专属经济区、海山、海岸线、船舶位置、船舶轨迹）禁用编辑/导入/导出/删除按钮
+        if (!nameLayer && this.properties.id != "Undersea Feature Gazetteer") {
             suffix.append(
                 this.createSuffixEdit(),
                 this.createSuffixImport(),
@@ -804,13 +807,7 @@ class MarkerLayer extends AbstractLinkP<MarkerManager> {
         const visible = dom.createHtmlElement('div', ["jas-ctrl-marker-suffix-item"]);
 
         // oe: 对于基础图层（海岸线、专属经济区）通过设置 show 属性来控制图层的显隐
-        let nameLayer = this.map.getLayer(this.properties.name);
-        if (nameLayer) {
-            let visibility = this.map.getLayoutProperty(this.properties.name, "visibility");
-            visible.innerHTML = visibility === "visible" ? eye : uneye;
-        }
-        else
-            visible.innerHTML = eye;
+        visible.innerHTML = this.properties.show ? eye : uneye;
 
         visible.addEventListener('click', () => {
             const isEye = visible.innerHTML === eye;
@@ -821,6 +818,12 @@ class MarkerLayer extends AbstractLinkP<MarkerManager> {
             let nameLayer = this.map.getLayer(this.properties.name);
             if (nameLayer)
                 this.map.setLayoutProperty(this.properties.name, "visibility", this.layerGroup.show ? "visible" : "none");
+
+            // 通过海山图层控制 Undersea Feature Gazetteer 图层的显示/隐藏
+            if (this.properties.id == "Undersea Feature Gazetteer") {
+                let underseaLayers = this.map.getLayerGroup("Undersea-Feature-Gazetteer");
+                underseaLayers?.layerIds!.forEach(id => this.map.setLayoutProperty(id, "visibility", this.layerGroup.show ? "visible" : "none"));
+            }
         });
 
         this.setGeometryVisible = (value: boolean) => {

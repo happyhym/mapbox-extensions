@@ -389,7 +389,7 @@ export function createFeaturePropertiesEditModal(
         content.append(dom.createHtmlElement('div',
             ['jas-modal-content-edit-item'],
             [dom.createHtmlElement('label', [], [lang.chooseLayer]), createSelectBindingElement(properties, 'layerId', x => {
-                options.layers.filter(l => l.name != "专属经济区" && l.name != "海岸线" && l.name != "船舶位置" && l.name != "船舶轨迹").forEach(l => {
+                options.layers.filter(l => l.name != "专属经济区" && l.id != "Undersea Feature Gazetteer" && l.name != "海岸线" && l.name != "船舶位置" && l.name != "船舶轨迹").forEach(l => {
                     x.innerHTML += `<option value="${l.id}">${l.name}</option>`
                 });
                 x.value = properties.layerId;
