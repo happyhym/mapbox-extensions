@@ -15,11 +15,14 @@ const { SvgBuilder } = svg;
 
 // oe: 使用 declare 关键字声明要在 Typescript 中调用已在 Javascript 中定义的全局变量或函数
 declare const dotNetHelper: any;
+declare const undo: any;
+declare const redo: any;
 declare const saveLayer: any;
-
 // oe: 要从数据库中删除的图层
 let layersToDeleted: any = [];
-export { layersToDeleted };
+// oe: 图层（要素）删除/重做列表
+let undoList: any = [];
+export { layersToDeleted, undoList };
 
 interface MarkerItemOptions {
     onCreate?(feature: MarkerFeatureType): void,
@@ -331,16 +334,26 @@ export default class MarkerManager {
     private createHeaderAddLayer() {
         // const div = dom.createHtmlElement('div', ["jas-ctrl-marker-btns-container", "jas-ctrl-marker-item-btn"]);
         const btnAddLayer = dom.createHtmlElement('div', ["jas-ctrl-marker-item-btn"]);
+        const btnUndo = dom.createHtmlElement('button', ["jas-ctrl-marker-item-btn"]);
+        const btnRedo = dom.createHtmlElement('button', ["jas-ctrl-marker-item-btn"]);
         const btnSaveLayer = dom.createHtmlElement('div', ["jas-ctrl-marker-item-btn"]);
         const btnRestoreLayer = dom.createHtmlElement('div', ["jas-ctrl-marker-item-btn"]);
 
         // 设置 title
         btnAddLayer.title = lang.newLayer;
+        btnUndo.title = lang.undo;
+        btnUndo.id = "btnUndo";
+        //btnUndo.disabled=true;
+        btnRedo.title = lang.redo;
+        btnRedo.id = "btnRedo";
+        //btnRedo.disabled=true;
         btnSaveLayer.title = lang.saveLayer;
         btnRestoreLayer.title = lang.restoreLayer;
 
         // 设置 图标
         btnAddLayer.innerHTML = new SvgBuilder('add').resize(25, 25).create();
+        btnUndo.innerHTML = `<img src="_content/IDSSE.OceanExplorer.Shared/images/svg/undo.svg" style="width:18px;height:18px;" />`;
+        btnRedo.innerHTML = `<img src="_content/IDSSE.OceanExplorer.Shared/images/svg/redo.svg" style="width:18px;height:18px;" />`;
         btnSaveLayer.innerHTML = `<img src="_content/IDSSE.OceanExplorer.Shared/images/save.png"/>`;
         btnRestoreLayer.innerHTML = `<img src="_content/IDSSE.OceanExplorer.Shared/images/restore.png"/>`;
 
@@ -360,16 +373,18 @@ export default class MarkerManager {
 
         // oe: 在 typescript/javascript 中调用 .NET 中的函数
         // dotNetHelper.invokeMethodAsync("TestAlert", "call .NET method in javascript.");
+        // oe: 撤销
+        btnUndo.addEventListener('click', () => undo());
+        // oe: 重做
+        btnRedo.addEventListener('click', () => redo());
         // 将图层（图层属性及其上的所有 features）存入数据库
         btnSaveLayer.addEventListener('click', () => saveLayer());
         // 从数据库加载图层
         btnRestoreLayer.addEventListener('click', () => dotNetHelper.invokeMethodAsync("FetchLayers"));
 
         const c = dom.createHtmlElement('div', ["jas-flex-center", "jas-ctrl-marker-btns-container"]);
-        c.append(btnAddLayer, btnSaveLayer);
+        c.append(btnAddLayer, btnUndo, btnRedo, btnSaveLayer);
         return c;
-
-        // return div;
     }
 
     search(value?: string) {
@@ -452,6 +467,9 @@ class MarkerLayer extends AbstractLinkP<MarkerManager> {
     private itemContainerElement = dom.createHtmlElement('div', ['jas-ctrl-hidden']);
 
     declare setGeometryVisible: (value: boolean) => void;
+
+    // oe: 保存旧名称，用于恢复/重做图层名称更新
+    public oldName: string = "";
 
     /**
      *
@@ -621,14 +639,22 @@ class MarkerLayer extends AbstractLinkP<MarkerManager> {
     }
 
     remove() {
+        // oe: 删除图层
+        layersToDeleted.push({ id: this.properties.id, name: this.properties.name });
+        // oe: 临时保存删除的图层，用于恢复操作
+        var features = this.items.map(x => x.feature);
+        undoList.push({ action: "remove", target: "markerLayer", properties: this.properties, features: features });
+        console.log(`点保存按钮，将从数据库中删除图层：${this.properties.id}:${this.properties.name}`);
+        var btnUndo = document.getElementById("btnUndo") as HTMLButtonElement;
+        if (btnUndo) {
+            btnUndo.disabled = false;
+        }
+
         this.options.onRemove?.call(undefined, this.properties);
         const index = this.parent.markerLayers.indexOf(this);
         this.parent.markerLayers.splice(index, 1);
         this.htmlElement.remove();
         this.map.removeLayerGroup(this.layerGroup.id);
-        // oe: 删除图层
-        layersToDeleted.push({ id: this.properties.id, name: this.properties.name });
-        console.log(`将从数据库中删除图层：${this.properties.id}:${this.properties.name}`);
     }
 
     updateDataSource() {
@@ -681,7 +707,7 @@ class MarkerLayer extends AbstractLinkP<MarkerManager> {
         // oe: 用于控制以 this.properties.name 命名的图层，这样该图层可不设置 markerOptions.featureCollection.features
         let nameLayer = this.map.getLayer(this.properties.name);
         // 基础图层（专属经济区、海山、海岸线、船舶位置、船舶轨迹）禁用编辑/导入/导出/删除按钮
-        if (!nameLayer && this.properties.id != "Undersea Feature Gazetteer") {
+        if (!nameLayer && this.properties.id != "Undersea Feature Gazetteer" && this.properties.id != "shipLocation") {
             suffix.append(
                 this.createSuffixEdit(),
                 this.createSuffixImport(),
@@ -763,9 +789,19 @@ class MarkerLayer extends AbstractLinkP<MarkerManager> {
         edit.innerHTML = new SvgBuilder('edit').resize(18, 18).create();
         edit.title = lang.editItem;
         edit.addEventListener('click', () => {
+            // oe: 记录更新前的图层名字
+            this.oldName = this.properties.name;
+
             createMarkerLayerEditModel(this.properties, {
                 mode: 'update',
                 onConfirm: () => {
+                    // oe: 恢复图层名称
+                    undoList.push({ action: "edit", target: "markerLayer", properties: this.properties });
+                    var btnUndo = document.getElementById("btnUndo") as HTMLButtonElement;
+                    if (btnUndo) {
+                        btnUndo.disabled = false;
+                    }
+
                     this.options.onRename?.call(undefined, this.properties);
                     this.nameElement.innerText = this.properties.name;
                 }
@@ -819,6 +855,11 @@ class MarkerLayer extends AbstractLinkP<MarkerManager> {
             if (nameLayer)
                 this.map.setLayoutProperty(this.properties.name, "visibility", this.layerGroup.show ? "visible" : "none");
 
+            // 通过船舶位置图层控制 shipLocation 图层的显示/隐藏
+            if (this.properties.id == "shipLocation") {
+                let shipLocationLayers = this.map.getLayerGroup("船舶位置");
+                shipLocationLayers?.layerIds!.forEach(id => this.map.setLayoutProperty(id, "visibility", this.layerGroup.show ? "visible" : "none"));
+            }
             // 通过海山图层控制 Undersea Feature Gazetteer 图层的显示/隐藏
             if (this.properties.id == "Undersea Feature Gazetteer") {
                 let underseaLayers = this.map.getLayerGroup("Undersea-Feature-Gazetteer");
@@ -841,7 +882,10 @@ class MarkerLayer extends AbstractLinkP<MarkerManager> {
 
 class MarkerItem extends AbstractLinkP<MarkerLayer> {
     readonly htmlElement = dom.createHtmlElement('div', ['jas-ctrl-marker-item-container']);
-    readonly reName: (name: string) => void;
+    public readonly reName: (name: string) => void;
+
+    // oe: 记录更新前的要素
+    public clonedFeature: string = "";
 
     /**
      *
@@ -911,6 +955,14 @@ class MarkerItem extends AbstractLinkP<MarkerLayer> {
     }
 
     remove() {
+        // oe: 临时保存删除的要素，用于恢复操作
+        undoList.push({ action: "remove", target: "markerItem", markerItem: this });
+        console.log(`点保存按钮，将从数据库中删除要素：${this.feature.properties.id}:${this.feature.properties.name}`);
+        var btnUndo = document.getElementById("btnUndo") as HTMLButtonElement;
+        if (btnUndo) {
+            btnUndo.disabled = false;
+        }
+
         // 外部删除 
         this.options.onRemove?.call(undefined, this.feature);
 
@@ -963,10 +1015,20 @@ class MarkerItem extends AbstractLinkP<MarkerLayer> {
                 //     'offset': offset
                 // });
 
+                // oe: 记录更新前的要素
+                this.clonedFeature = JSON.stringify(this.feature);
+
                 createFeaturePropertiesEditModal(this.feature, {
                     layers: [],
                     mode: 'update',
                     onConfirm: () => {
+                        // oe: 恢复要素名称
+                        undoList.push({ action: "edit", target: "markerItem", markItem: this });
+                        var btnUndo = document.getElementById("btnUndo") as HTMLButtonElement;
+                        if (btnUndo) {
+                            btnUndo.disabled = false;
+                        }
+
                         // 外部更新
                         this.options.onUpdate?.call(undefined, this.feature);
                         update();
