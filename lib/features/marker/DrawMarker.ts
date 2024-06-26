@@ -54,6 +54,10 @@ abstract class DrawBase<T extends GeoJSON.Geometry> {
     start(properties: MarkerFeatrueProperties) {
         this.end();
 
+        // oe: 重置 centre 和 radius，确保画圆后不影响再画其他要素时的逻辑判断
+        properties.centre = undefined;
+        properties.radius = undefined;
+
         this.map.doubleClickZoom.disable();
         this.map.getCanvas().style.cursor = 'crosshair';
         this.onStart(properties);
@@ -835,7 +839,6 @@ class DrawCircle extends DrawBase<GeoJSON.Polygon> {
                 coords.pop();
                 // coords.push(coord);
                 // coords.push(coords[0]);
-
                 coords.push(...circleCoords);
 
                 dblClickHandler(e);

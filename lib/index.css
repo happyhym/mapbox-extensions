@@ -733,6 +733,7 @@
     /* width: 200px; */
     display: flex;
     padding:5px;
+    height: auto;
     flex-direction: column;
 }
 

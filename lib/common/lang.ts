@@ -38,6 +38,7 @@ interface ILanguageOptions {
     deleteItem: string,
     visibility: string,
     cannotDeleteLastLayer: string,
+    playStatus: string,
 
     warn: string,
     confirm: string,
@@ -98,7 +99,7 @@ const zh: ILanguageOptions = {
     deleteItem: "删除",
     visibility: "显隐",
     cannotDeleteLastLayer: "无法删除最后一个图层",
-
+    playStatus:"轨迹回放",
     warn: "警告",
     confirm: "确认",
     cancel: "取消",
@@ -157,7 +158,7 @@ const en: ILanguageOptions = {
     deleteItem: "delete",
     visibility: "visibility",
     cannotDeleteLastLayer: "can not delete last layer",
-
+    playStatus:"track replay",
     warn: "warning",
     confirm: "confirm",
     cancel: "cancel",

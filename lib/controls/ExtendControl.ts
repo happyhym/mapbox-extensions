@@ -14,6 +14,8 @@ export interface ExtendControlOptions {
     title?: string,
     titleSlot?: HTMLElement,
     closeable?: boolean,
+    // oe: 增加 containerId 参数是为了可以在前端指定 ExtendControl 的容器
+    containerId?: string
 }
 
 export abstract class AbstractExtendControl implements mapboxgl.IControl {
@@ -112,15 +114,14 @@ export abstract class AbstractExtendControl implements mapboxgl.IControl {
 
         this.element.append(image_open_wapper, image_close_wapper);
 
-        var siderbar = document.getElementById("gisSidebar");
-        if (siderbar) {
+        // oe: 通过 containerId 在前端指定 ExtendControl 的容器
+        var container = document.getElementById(this.options.containerId!);
+        if (container) {
             this.element.style.display = "none";
-            // oe: 图层管理改为在左侧边栏显示
-            siderbar.appendChild(desktopContainer);
+            container.appendChild(desktopContainer);
         }
         else
             this.element.append(desktopContainer);
-
 
         map.getContainer().append(this.mobileContainer);
 

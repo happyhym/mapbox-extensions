@@ -104,7 +104,8 @@ export class SwitchMapControl extends SwitchLayerBaseControl {
       type: "raster",
       source: {
         type: 'raster',
-        tiles:[`https://webrd01.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}`],
+        tiles:[`${window.location.origin}/api/MapTile/Google/{z}/{y}/{x}`],
+        // tiles:[`https://webrd01.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}`],
         // tiles: [`https://gac-geo.googlecnapps.cn/maps/vt?lyrs=y&hl=zh-CN&gl=CN&x={x}&y={y}&z={z}`],
         tileSize: 256
       },
@@ -117,7 +118,8 @@ export class SwitchMapControl extends SwitchLayerBaseControl {
       type: "raster",
       source: {
         type: 'raster',
-        tiles: [`${window.location.protocol}//${window.location.hostname}:9801/tiles/geoserver/gwc/service/wmts/rest/ne:gmrt_20231018/5/EPSG:900913/EPSG:900913:{z}/{y}/{x}?format=image/jpeg`],
+        tiles: [`${window.location.protocol}//${window.location.hostname}:9801/tiles/geoserver/gwc/service/wmts/rest/ne:ougp/EPSG:900913/EPSG:900913:{z}/{y}/{x}?format=image/jpeg`],
+        // tiles: [`${window.location.protocol}//${window.location.hostname}:9801/tiles/geoserver/gwc/service/wmts/rest/ne:gmrt_20231018/5/EPSG:900913/EPSG:900913:{z}/{y}/{x}?format=image/jpeg`],
         // tiles: [`https://api.mapbox.com/v4/mapbox.satellite/{z}/{x}/{y}.png?access_token=${mapboxgl.accessToken}`],
         tileSize: 256
       },
@@ -206,7 +208,7 @@ export class SwitchMapControl extends SwitchLayerBaseControl {
     changeDiv(this.options.showSatelliteDefault ? this.options.baseOption! : this.options.satelliteOption!);
 
     div.addEventListener("click", () => {
-      const satelliteVisibled = map.getLayoutProperty('mapbox-satellite', 'visibility') === 'visible';
+      const satelliteVisibled = map.getLayoutProperty('mapbox-satellite', 'visibility') == 'visible';
       changeDiv(satelliteVisibled ? this.options.satelliteOption! : this.options.baseOption!);
       map.setLayoutProperty('mapbox-satellite', 'visibility', satelliteVisibled ? 'none' : 'visible');
       map.setLayoutProperty('mapbox-gmrt', 'visibility', satelliteVisibled ? 'visible' : 'none');

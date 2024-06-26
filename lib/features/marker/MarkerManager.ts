@@ -18,6 +18,9 @@ declare const dotNetHelper: any;
 declare const undo: any;
 declare const redo: any;
 declare const saveLayer: any;
+declare const readonlyLayers: any;
+declare const trackReplay: any;
+
 // oe: 要从数据库中删除的图层
 let layersToDeleted: any = [];
 // oe: 图层（要素）删除/重做列表
@@ -705,9 +708,10 @@ class MarkerLayer extends AbstractLinkP<MarkerManager> {
         const suffix = dom.createHtmlElement('div', ['jas-ctrl-marker-suffix', 'jas-ctrl-hidden']);
 
         // oe: 用于控制以 this.properties.name 命名的图层，这样该图层可不设置 markerOptions.featureCollection.features
-        let nameLayer = this.map.getLayer(this.properties.name);
+        // let nameLayer = this.map.getLayer(this.properties.name);
         // 基础图层（专属经济区、海山、海岸线、船舶位置、船舶轨迹）禁用编辑/导入/导出/删除按钮
-        if (!nameLayer && this.properties.id != "Undersea Feature Gazetteer" && this.properties.id != "shipLocation") {
+        // if (!nameLayer && this.properties.name != "Undersea Feature Gazetteer" && this.properties.name != "船舶位置") {
+        if (!readonlyLayers.includes(this.properties.name)) {
             suffix.append(
                 this.createSuffixEdit(),
                 this.createSuffixImport(),
@@ -722,7 +726,10 @@ class MarkerLayer extends AbstractLinkP<MarkerManager> {
             suffix.classList.add('jas-ctrl-hidden');
         });
 
-        header.append(content, suffix, this.createSuffixVisible());
+        if (this.properties.name.endsWith("船"))
+            header.append(content, suffix, this.createShipLocationVisible(), this.createShipTrackVisible());
+        else
+            header.append(content, suffix, this.createSuffixVisible());
         return header;
     }
 
@@ -850,21 +857,97 @@ class MarkerLayer extends AbstractLinkP<MarkerManager> {
             visible.innerHTML = isEye ? uneye : eye;
             this.layerGroup.show = !isEye;
 
-            // oe: 用于控制以 this.properties.name 命名的图层，即基础图层（海岸线、专属经济区），这样该图层可不设置 markerOptions.featureCollection.features，显隐功能直接应用于图层
-            let nameLayer = this.map.getLayer(this.properties.name);
-            if (nameLayer)
+            // oe: 用于控制以 this.properties.name 为 id 的图层，即基础图层（海岸线、专属经济区），这样该图层可不设置 markerOptions.featureCollection.features，显隐功能直接应用于图层
+            if (readonlyLayers.includes(this.properties.name) && this.map.getLayer(this.properties.name))
                 this.map.setLayoutProperty(this.properties.name, "visibility", this.layerGroup.show ? "visible" : "none");
 
+            // oe: 用于控制以 this.properties.name 为 id 的图层组（Undersea Feature Gazetteer、文物保护区等）
+            let layers = this.map.getLayerGroup(this.properties.name);
+            if (layers)
+                layers?.layerIds!.forEach(id => this.map.setLayoutProperty(id, "visibility", this.layerGroup.show ? "visible" : "none"));
+
             // 通过船舶位置图层控制 shipLocation 图层的显示/隐藏
-            if (this.properties.id == "shipLocation") {
-                let shipLocationLayers = this.map.getLayerGroup("船舶位置");
-                shipLocationLayers?.layerIds!.forEach(id => this.map.setLayoutProperty(id, "visibility", this.layerGroup.show ? "visible" : "none"));
-            }
-            // 通过海山图层控制 Undersea Feature Gazetteer 图层的显示/隐藏
-            if (this.properties.id == "Undersea Feature Gazetteer") {
-                let underseaLayers = this.map.getLayerGroup("Undersea-Feature-Gazetteer");
-                underseaLayers?.layerIds!.forEach(id => this.map.setLayoutProperty(id, "visibility", this.layerGroup.show ? "visible" : "none"));
-            }
+            // if (this.properties.id == "shipLocation") {
+            //     let shipLocationLayers = this.map.getLayerGroup("船舶位置");
+            //     shipLocationLayers?.layerIds!.forEach(id => this.map.setLayoutProperty(id, "visibility", this.layerGroup.show ? "visible" : "none"));
+            // }
+            // 控制 Undersea Feature Gazetteer 图层的显示/隐藏
+            // if (this.properties.id == "Undersea Feature Gazetteer") {
+            //     let underseaLayers = this.map.getLayerGroup("Undersea-Feature-Gazetteer");
+            //     underseaLayers?.layerIds!.forEach(id => this.map.setLayoutProperty(id, "visibility", this.layerGroup.show ? "visible" : "none"));
+            // }
+        });
+
+        this.setGeometryVisible = (value: boolean) => {
+            // oe: 对于基础图层（海岸线、专属经济区）已通过设置 show 属性来控制图层的显隐
+            // visible.innerHTML = value ? eye : uneye;
+            // this.layerGroup.show = value;
+        }
+
+        visible.style.cursor = "pointer";
+        visible.style.marginLeft = "5px";
+        visible.title = lang.visibility;
+        return visible;
+    }
+
+    private createShipLocationVisible() {
+        const svgBuilder = new SvgBuilder('eye').resize(18, 18);
+        const eye = svgBuilder.create();
+        const uneye = svgBuilder.change('uneye').create();
+
+        const visible = dom.createHtmlElement('div', ["jas-ctrl-marker-suffix-item"]);
+
+        // oe: 对于基础图层（海岸线、专属经济区）通过设置 show 属性来控制图层的显隐
+        visible.innerHTML = this.properties.show ? eye : uneye;
+
+        visible.addEventListener('click', () => {
+            const isEye = visible.innerHTML === eye;
+            visible.innerHTML = isEye ? uneye : eye;
+            this.layerGroup.show = !isEye;
+
+            // oe: 用于控制以 this.properties.name 为 id 的图层组（Undersea Feature Gazetteer、文物保护区等）
+            let layers = this.map.getLayerGroup(this.properties.name);
+            if (layers)
+                layers?.layerIds!.forEach(id => {
+                    if (id.endsWith("-track-layer"))
+                        return;
+                    this.map.setLayoutProperty(id, "visibility", this.layerGroup.show ? "visible" : "none");
+                });
+        });
+
+        this.setGeometryVisible = (value: boolean) => {
+            // oe: 对于基础图层（海岸线、专属经济区）已通过设置 show 属性来控制图层的显隐
+            // visible.innerHTML = value ? eye : uneye;
+            // this.layerGroup.show = value;
+        }
+
+        visible.style.cursor = "pointer";
+        visible.style.marginLeft = "5px";
+        visible.title = lang.visibility;
+        return visible;
+    }
+    private createShipTrackVisible() {
+        const svgBuilder = new SvgBuilder('eye').resize(18, 18);
+        const eye = svgBuilder.create();
+        const uneye = svgBuilder.change('uneye').create();
+
+        const visible = dom.createHtmlElement('div', ["jas-ctrl-marker-suffix-item"]);
+
+        // oe: 对于基础图层（海岸线、专属经济区）通过设置 show 属性来控制图层的显隐
+        visible.innerHTML = this.properties.show ? eye : uneye;
+
+        visible.addEventListener('click', () => {
+            const isEye = visible.innerHTML === eye;
+            visible.innerHTML = isEye ? uneye : eye;
+            this.layerGroup.show = !isEye;
+
+            // oe: 用于控制以 this.properties.name 为 id 的图层组（Undersea Feature Gazetteer、文物保护区等）
+            let layers = this.map.getLayerGroup(this.properties.name);
+            if (layers)
+                layers?.layerIds!.forEach(id => {
+                    if (id.endsWith("-track-layer"))
+                        this.map.setLayoutProperty(id, "visibility", this.layerGroup.show ? "visible" : "none");
+                });
         });
 
         this.setGeometryVisible = (value: boolean) => {
@@ -987,10 +1070,23 @@ class MarkerItem extends AbstractLinkP<MarkerLayer> {
     } = {}) {
         const element = dom.createHtmlElement('div', ['jas-ctrl-marker-suffix']);
         if (options.editGeometry) element.append(this.createSuffixEditGeometry());
-        element.append(
-            this.createSuffixEdit(),
-            this.createSuffixExport(),
-            this.createSuffixDel());
+        // oe: 船舶航行动态数据分析（船舶列表）
+        if (this.feature.properties.id.endsWith("-ship-menu-tree")) {
+            element.append(
+                this.createSuffixReplay()
+            );
+        }
+        else if (this.feature.properties.id.endsWith("-readonly")) {
+            element.append(
+                this.createSuffixVisible()
+            );
+        }
+        else
+            element.append(
+                this.createSuffixEdit(),
+                this.createSuffixExport(),
+                this.createSuffixDel(),
+            );
 
         return element;
     }
@@ -1131,5 +1227,51 @@ class MarkerItem extends AbstractLinkP<MarkerLayer> {
         div.title = lang.deleteItem;
 
         return div;
+    }
+
+    private createSuffixVisible() {
+        const svgBuilder = new SvgBuilder('eye').resize(18, 18);
+        const eye = svgBuilder.create();
+        const uneye = svgBuilder.change('uneye').create();
+
+        const visible = dom.createHtmlElement('div', ["jas-ctrl-marker-suffix-item"]);
+
+        this.feature.properties.style.visibility ??= true;
+        visible.innerHTML = this.feature.properties.style.visibility ? eye : uneye;
+
+        visible.addEventListener('click', () => {
+            const isEye = visible.innerHTML === eye;
+            visible.innerHTML = isEye ? uneye : eye;
+            console.log(this.feature.properties);
+            this.map.setLayoutProperty(`${this.feature.properties.name}`, "visibility", isEye ? "none" : "visible");
+        });
+
+        visible.style.cursor = "pointer";
+        visible.style.marginLeft = "5px";
+        visible.title = lang.visibility;
+        return visible;
+    }
+
+    private createSuffixReplay() {
+        // const svgBuilder = new SvgBuilder('play').resize(18, 18);
+        const play = `<img src="_content/IDSSE.OceanExplorer.Shared/images/svg/play.svg" style="width:18px;height:18px;" />`;//svgBuilder.create();
+        const stop = `<img src="_content/IDSSE.OceanExplorer.Shared/images/svg/stop.svg" style="width:18px;height:18px;" />`;//svgBuilder.change('stop').create();
+
+        const btnPlay = dom.createHtmlElement('div', ["jas-ctrl-marker-suffix-item"]);
+
+        // oe: 对于基础图层（海岸线、专属经济区）通过设置 show 属性来控制图层的显隐
+        btnPlay.innerHTML = play;
+
+        btnPlay.addEventListener('click', () => {
+            const isPlay = btnPlay.innerHTML == play;
+            btnPlay.innerHTML = isPlay ? stop : play;
+            // 回放逻辑
+            trackReplay(`${this.feature.properties.name}`, `${this.feature.properties.id}`);
+        });
+
+        btnPlay.style.cursor = "pointer";
+        btnPlay.style.marginLeft = "5px";
+        btnPlay.title = lang.playStatus;
+        return btnPlay;
     }
 }

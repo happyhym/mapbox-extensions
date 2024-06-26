@@ -20,6 +20,10 @@ const coordConvertOptions: TCoordConvertOptions = {
     towgs84: ""
 }
 
+// oe: 
+// 使用 declare 关键字声明要在 Typescript 中调用已在 Javascript 中定义的全局变量或函数
+declare const readonlyLayers: any;
+
 export interface ModalOptions {
     content: HTMLElement | string,
     title?: string,
@@ -328,7 +332,7 @@ export function createMarkerLayerEditModel(layer: MarkerLayerProperties, options
 
     content.append(lang.nameText, createInputBindingElement(layer, 'name', input => {
         input.type = 'text';
-        // oe: 长度有12改为32
+        // oe: 长度由12改为32
         input.maxLength = 32;
         // oe: 添加 name 属性用于判断用户是否填写了标注名称
         input.id = "featureNameRequired";
@@ -389,7 +393,8 @@ export function createFeaturePropertiesEditModal(
         content.append(dom.createHtmlElement('div',
             ['jas-modal-content-edit-item'],
             [dom.createHtmlElement('label', [], [lang.chooseLayer]), createSelectBindingElement(properties, 'layerId', x => {
-                options.layers.filter(l => l.name != "专属经济区" && l.id != "Undersea Feature Gazetteer" && l.name != "海岸线" && l.id != "shipLocation" && l.name != "船舶轨迹").forEach(l => {
+                // options.layers.filter(l => l.name != "专属经济区" && l.name != "Undersea Feature Gazetteer" && l.name != "九段线" && l.name != "海岸线" && l.name != "船舶位置" && l.name != "船舶轨迹").forEach(l => {
+                options.layers.filter(l => !readonlyLayers.includes(l.name)).forEach(l => {
                     x.innerHTML += `<option value="${l.id}">${l.name}</option>`
                 });
                 x.value = properties.layerId;
@@ -401,7 +406,7 @@ export function createFeaturePropertiesEditModal(
         ['jas-modal-content-edit-item'],
         [dom.createHtmlElement('label', [], [lang.markerName]), createInputBindingElement(properties, 'name', input => {
             input.type = 'text';
-            // oe: 长度有12改为32
+            // oe: 长度由12改为32
             input.maxLength = 32;
             // oe: 添加 name 属性用于判断用户是否填写了标注名称
             input.id = "featureNameRequired";
@@ -499,8 +504,9 @@ export function createFeaturePropertiesEditModal(
             //     })
             //     break;
         }
+
         // 是圆的话通过圆心和半径计算拐点坐标
-        if (f.properties?.centre && f.properties?.radius && f.properties.scale && f.geometry.type === "Polygon") {
+        if (f.properties?.centre && f.properties?.radius && f.geometry.type === "Polygon") {
             // var centre_radius = f.properties.coordinateList?.split("\n");
             // // 第一行是圆心的经纬度
             // var centre = centre_radius![0].split(",");
@@ -518,9 +524,13 @@ export function createFeaturePropertiesEditModal(
 
             // console.log(`${f.properties.centre}--${f.properties.radius}`);
             var centre = f.properties.centre?.split(",");
+            // 默认 km
+            if (!f.properties.scale)
+                f.properties.scale = 1;
+
             f.geometry.coordinates[0] = getCircleCoordinates([Number(centre[0]), Number(centre[1])], f.properties.radius * f.properties.scale);
         }
-        else
+        else {
             // 重新赋值（可通过判断 textarea 内容是否变化决定是否重新赋值）
             f.properties.coordinateList?.split("\n").forEach((line) => {
                 if (line.trim() === "")
@@ -553,6 +563,7 @@ export function createFeaturePropertiesEditModal(
                     //     break;
                 }
             });
+        }
     }
     setCoordinateList(feature);
 
