@@ -3,7 +3,7 @@ import { creator } from 'wheater';
 import LayerGroup from '../LayerGroup';
 import Tip from '../Tip';
 
-export type MeasureType = 'Point' | 'LineString' | 'Polygon';
+export type MeasureType = 'Point' | 'Profile' | 'LineString' | 'Polygon';
 
 export type TipOptions = {
     message_before_drawing: string,

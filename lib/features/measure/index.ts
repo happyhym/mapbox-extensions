@@ -1,5 +1,6 @@
 import MeasureBase, { MeasureOptions, MeasureType } from "./MeasureBase";
 import MeasurePoint, { MeasurePointOptions, showElevation } from "./MeasurePoint";
+import MeasureProfile, { MeasureProfileOptions } from "./MeasureProfile";
 import MeasureLineString, { MeasureLineStringOptions } from "./MeasureLineString";
 import MeasurePolygon, { MeasurePolygonOptions } from "./MeasurePolygon";
 
@@ -10,6 +11,7 @@ import MeasurePolygon4Mobile from "./mobile/MeasurePolygon";
 export {
     MeasureBase, MeasureOptions, MeasureType,
     MeasurePoint, MeasurePointOptions, showElevation,
+    MeasureProfile, MeasureProfileOptions,
     MeasureLineString, MeasureLineStringOptions,
     MeasurePolygon, MeasurePolygonOptions,
 

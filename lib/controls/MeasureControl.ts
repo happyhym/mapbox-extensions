@@ -5,6 +5,7 @@ import { svg } from '../common';
 import {
     MeasureBase, MeasureType,
     MeasurePoint, MeasurePointOptions,
+    MeasureProfile, MeasureProfileOptions,
     MeasureLineString, MeasureLineStringOptions,
     MeasurePolygon, MeasurePolygonOptions,
 } from "../features/measure";
@@ -57,6 +58,11 @@ export interface MeasureControlOptions {
      */
     measurePointOptions?: MeasurePointOptions;
 
+    /** 
+     * 测量剖面选项
+     */
+    measureProfileOptions?: MeasureProfileOptions;
+
     /**
      * 测量线选项
      */
@@ -81,9 +87,10 @@ export class MeasureControl implements mapboxgl.IControl {
         options.horizontal ??= false;
         options.btnBgColor ??= "#ffffff";
         options.btnActiveColor ??= '#ddd';
-        options.enableModes ??= ['Point', 'LineString', 'Polygon'];
+        options.enableModes ??= ['Point', 'Profile', 'LineString', 'Polygon'];
         options.geometryClick ??= false;
         options.measurePointOptions ??= {};
+        options.measureProfileOptions ??= {};
         options.measureLineStringOptions ??= {};
         options.measurePolygonOptions ??= {};
     }
@@ -102,6 +109,7 @@ export class MeasureControl implements mapboxgl.IControl {
 
     onAdd(map: mapboxgl.Map): HTMLElement {
         this.measures.set('Point', { measure: new MeasurePoint(map, this.options.measurePointOptions), svg: new SvgBuilder('point').create() });
+        this.measures.set('Profile', { measure: new MeasureProfile(map, this.options.measureProfileOptions), svg: new SvgBuilder('profile').create() });
         this.measures.set('LineString', { measure: new MeasureLineString(map, this.options.measureLineStringOptions), svg: new SvgBuilder('line').create() });
         this.measures.set('Polygon', { measure: new MeasurePolygon(map, this.options.measurePolygonOptions), svg: new SvgBuilder('polygon').create() });
 
@@ -116,7 +124,7 @@ export class MeasureControl implements mapboxgl.IControl {
         this.measures.forEach((value, key) => {
             const btn = this.createButton(value.svg, this.createClickMeasureButtonHandler(map, key));
             // oe: 设置 title
-            btn.title = key === "Point" ? "获取鼠标点击处经纬度和高程" : key === "LineString" ? "测量线段长度" : key === "Polygon" ? "测量面积" : "";
+            btn.title = key === "Point" ? "获取鼠标点击处经纬度和高程" : key === "Profile" ? "获取鼠标点击处海洋要素剖面" : key === "LineString" ? "测量线段长度" : key === "Polygon" ? "测量面积" : "";
             value.controlElement = btn;
             this.element.append(btn);
         })
