@@ -17,7 +17,7 @@ export interface GeometryStyle {
     polygonOutlineWidth?: number,
 
     // 显示/隐藏图标的初始状态
-    visibility?: boolean
+    visibility?: string
 }
 
 export interface MarkerFeatrueProperties {
