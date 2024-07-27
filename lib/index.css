@@ -770,10 +770,10 @@
 }
 
 .jas-ctrl-marker-layer-header {
+    padding: 5px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 8px;
 }
 
 .jas-ctrl-marker-layer-header:hover {
@@ -819,9 +819,9 @@
 }
 
 .jas-ctrl-marker-item-container {
-    height: 20px;
-    font-size: 14px;
-    padding: 5px;
+    height: 33px;
+    padding: 6px;
+    font-size: 15px;
     line-height: normal !important;
     display: flex;
     justify-content: space-between;

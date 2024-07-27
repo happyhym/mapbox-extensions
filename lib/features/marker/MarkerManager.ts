@@ -516,6 +516,11 @@ class MarkerLayer extends AbstractLinkP<MarkerManager> {
                     'icon-image': ['get', 'pointIcon', ['get', 'style']],
                     'icon-size': ['get', 'pointIconSize', ['get', 'style']],
                     'text-justify': 'auto',
+                    "icon-allow-overlap": true,
+                    "text-allow-overlap": true,
+                    "icon-ignore-placement": true,
+                    "text-ignore-placement": true,
+                    "text-optional": false,
                     'text-variable-anchor': ['left', 'right', 'top', 'bottom'],
                     'text-radial-offset': ['*', ['get', 'pointIconSize', ['get', 'style']], 4],
                 },
@@ -993,6 +998,16 @@ class MarkerItem extends AbstractLinkP<MarkerLayer> {
         this.reName = (name: string) => content.innerText = name;
 
         content.addEventListener('click', () => {
+            // 点击聚焦
+            //alert(this.feature.geometry.type);
+            if (!this.feature.properties.id.includes("-readonly")) {
+                const offset = this.parent.parent.options.drawAfterOffset;
+                const center = centroid(this.feature as any);
+                this.map.easeTo({
+                    center: center.geometry.coordinates as [number, number],
+                    'offset': offset
+                });
+            }
             // 临时禁用
             return;
             const box = bbox(this.feature as any);
@@ -1236,14 +1251,24 @@ class MarkerItem extends AbstractLinkP<MarkerLayer> {
 
         const visible = dom.createHtmlElement('div', ["jas-ctrl-marker-suffix-item"]);
 
-        this.feature.properties.style.visibility ??= true;
-        visible.innerHTML = this.feature.properties.style.visibility ? eye : uneye;
+        this.feature.properties.style.visibility ??= "visible";
+        visible.innerHTML = this.feature.properties.style.visibility == "visible" ? eye : uneye;
 
         visible.addEventListener('click', () => {
             const isEye = visible.innerHTML === eye;
             visible.innerHTML = isEye ? uneye : eye;
-            console.log(this.feature.properties);
-            this.map.setLayoutProperty(`${this.feature.properties.name}`, "visibility", isEye ? "none" : "visible");
+
+            if (this.feature.properties.id.includes("-group")) {
+                let layers = this.map.getLayerGroup(this.feature.properties.layerId);
+                if (layers)
+                    layers?.layerIds!.forEach(id => {
+                        if (id.startsWith(`${this.feature.properties.name}-group`))
+                            this.map.setLayoutProperty(id, "visibility", isEye ? "none" : "visible")
+                    });
+
+            }
+            else
+                this.map.setLayoutProperty(`${this.feature.properties.name}`, "visibility", isEye ? "none" : "visible");
         });
 
         visible.style.cursor = "pointer";
