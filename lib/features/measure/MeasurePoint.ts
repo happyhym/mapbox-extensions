@@ -60,7 +60,7 @@ export default class MeasurePoint extends MeasureBase {
         const symbolLayout: mapboxgl.SymbolLayout = {
             "text-field": ['get', 'coord'],
             'text-offset': [0, 2.5],
-            'text-size': 12,
+            'text-size': 10,
             'text-justify': 'left',
             'text-radial-offset': 1.8,
             'text-variable-anchor': ['top', 'bottom', 'left', 'right'],
