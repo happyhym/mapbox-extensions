@@ -50,7 +50,7 @@ export default class MeasurePolygon extends MeasureBase {
             `${area.toFixed(4)}m²`;
 
         options.createLengthText ??= (length: number) => length > 1 ?
-            `${length.toFixed(3)}km` :
+            `${(length/1.852).toFixed(3)}NM\r\n${length.toFixed(3)}km` :
             `${(length * 1000).toFixed(2)}m`;
         super(map, options);
     }
