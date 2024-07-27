@@ -528,23 +528,24 @@ export function createFeaturePropertiesEditModal(
             if (!f.properties.scale)
                 f.properties.scale = 1;
 
-            f.geometry.coordinates[0] = getCircleCoordinates([Number(centre[0]), Number(centre[1])], f.properties.radius * f.properties.scale);
+            f.geometry.coordinates[0] = getCircleCoordinates([dmsConvert(centre[0]), dmsConvert(centre[1])], f.properties.radius * f.properties.scale);
         }
         else {
             // 重新赋值（可通过判断 textarea 内容是否变化决定是否重新赋值）
             f.properties.coordinateList?.split("\n").forEach((line) => {
                 if (line.trim() === "")
                     return;
+                // 度分、度分秒转换为度                
                 let c = line.split(",");
                 switch (f.geometry.type) {
                     case "Point":
-                        f.geometry.coordinates = [Number(c[0]), Number(c[1])];
+                        f.geometry.coordinates = [dmsConvert(c[0]), dmsConvert(c[1])];
                         break;
                     case "MultiPoint":
-                        f.geometry.coordinates.push([Number(c[0]), Number(c[1])]);
+                        f.geometry.coordinates.push([dmsConvert(c[0]), dmsConvert(c[1])]);
                         break;
                     case "LineString":
-                        f.geometry.coordinates.push([Number(c[0]), Number(c[1])]);
+                        f.geometry.coordinates.push([dmsConvert(c[0]), dmsConvert(c[1])]);
                         break;
                     // case "MultiLineString":
                     //     f.geometry.coordinates.forEach(x => {
@@ -552,7 +553,7 @@ export function createFeaturePropertiesEditModal(
                     //     })
                     //     break;
                     case "Polygon":
-                        f.geometry.coordinates[0].push([Number(c[0]), Number(c[1])]);
+                        f.geometry.coordinates[0].push([dmsConvert(c[0]), dmsConvert(c[1])]);
                         break;
                     // case "MultiPolygon":
                     //     f.geometry.coordinates.forEach(x => {
@@ -575,7 +576,7 @@ export function createFeaturePropertiesEditModal(
                 textarea.rows = 5;
                 // oe: 添加 name 属性用于判断用户是否填写了坐标列表
                 textarea.id = "coordinateListRequired";
-                textarea.title = "每行一组，格式：lng,lat";
+                textarea.title = "每行一组，格式：lng,lat（支持度、度分、度分秒格式）";
             })]));
     // oe: 圆心坐标编辑文本框
     if (properties?.centre)
@@ -587,7 +588,7 @@ export function createFeaturePropertiesEditModal(
                 input.maxLength = 32;
                 // oe: 添加 name 属性用于判断用户是否填写了圆心经纬度
                 input.id = "featureCentreRequired";
-                input.title = "格式：lng,lat";
+                input.title = "格式：lng,lat（支持度、度分、度分秒格式）";
             })]));
     // oe: 半径编辑文本框
     if (properties?.radius) {
@@ -744,4 +745,34 @@ export function createFeaturePropertiesEditModal(
         }
         //onConfirm: options.onConfirm
     })
+}
+
+function dmsConvert(dms: string): number {
+    dms = dms.trim();
+    let _d: boolean = dms.includes("°");
+    let _m: boolean = dms.includes("′");
+    let _s: boolean = dms.includes("″");
+    if (!_d && !_m && !_s)
+        // 不含°′″，如：112.5
+        return Number(dms)
+    else if (_d && !_m && !_s)
+        // 度格式，如：112.5°，去掉°
+        return Number(dms.substring(0, dms.indexOf("°")))
+    else if (_d && _m && !_s) {
+        // 度分格式，如：112.2°32.6′，去掉° ′
+        let d: string = dms.substring(0, dms.indexOf("°"));
+        let m: string = dms.substring(dms.indexOf("°")+1, dms.indexOf("′"));
+        return Number(d) + Number(m) / 60;
+    }
+    else if (_d && _m && _s) {
+        // 度分格式，如：112.2°32.6′22.8″，去掉° ′ ″
+        let d: string = dms.substring(0, dms.indexOf("°"));
+        let m: string = dms.substring(dms.indexOf("°")+1, dms.indexOf("′"));
+        let s: string = dms.substring(dms.indexOf("′")+1, dms.indexOf("″"));
+        return Number(d) + Number(m) / 60 + Number(s) / 3600;
+    }
+    else {
+        alert("数据无效");
+        return 0;
+    }
 }
