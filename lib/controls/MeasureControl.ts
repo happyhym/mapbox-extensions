@@ -12,6 +12,9 @@ import {
 
 const { SvgBuilder } = svg;
 
+// oe: 使用 declare 关键字声明要在 Typescript 中调用已在 Javascript 中定义的全局变量或函数
+declare let isMeasuring: boolean;
+
 export interface MeasureControlOptions {
 
     /**
@@ -85,7 +88,7 @@ export class MeasureControl implements mapboxgl.IControl {
         options.horizontal ??= false;
 
         options.horizontal ??= false;
-        options.btnBgColor ??= "#ffffff";
+        options.btnBgColor ??= "transparent"; //"#ffffff";
         options.btnActiveColor ??= '#ddd';
         options.enableModes ??= ['Point', 'Profile', 'LineString', 'Polygon'];
         options.geometryClick ??= false;
@@ -124,7 +127,7 @@ export class MeasureControl implements mapboxgl.IControl {
         this.measures.forEach((value, key) => {
             const btn = this.createButton(value.svg, this.createClickMeasureButtonHandler(map, key));
             // oe: 设置 title
-            btn.title = key === "Point" ? "获取鼠标点击处经纬度和高程" : key === "Profile" ? "获取鼠标点击处海洋要素剖面" : key === "LineString" ? "测量线段长度" : key === "Polygon" ? "测量面积" : "";
+            btn.title = key === "Point" ? "获取鼠标点击处经纬度和高程" : key === "Profile" ? "获取鼠标点击处海洋要素信息" : key === "LineString" ? "测量线段长度" : key === "Polygon" ? "测量面积" : "";
             value.controlElement = btn;
             this.element.append(btn);
         })
@@ -153,6 +156,7 @@ export class MeasureControl implements mapboxgl.IControl {
             const type = this.currentMeasure.type;
 
             // 停止测量
+            isMeasuring=false;
             this.currentMeasure.stop();
             // 颜色恢复默认
             this.measures.get(this.currentMeasure.type)!.controlElement!.style.background = this.options.btnBgColor!
@@ -184,6 +188,18 @@ export class MeasureControl implements mapboxgl.IControl {
             measureProps.controlElement!.style.background = this.options.btnActiveColor!;
             this.currentMeasure = measureProps.measure;
             this.currentMeasure?.start();
+
+            // 响应 esc 键（按下 esc 键停止测量）
+            isMeasuring=true;
+            document.addEventListener("keydown", this.escapeHandler, true);
+        }
+    }
+
+    private escapeHandler = (event: KeyboardEvent) => {
+        if (event.key == "Escape") {               
+            // 响应 esc 键（按下 esc 键停止测量）
+            document.removeEventListener("keydown", this.escapeHandler, true);
+            this.stop();
         }
     }
 
