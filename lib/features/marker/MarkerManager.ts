@@ -511,6 +511,7 @@ class MarkerLayer extends AbstractLinkP<MarkerManager> {
                 type: 'symbol',
                 source: this.properties.id,
                 layout: {
+                    visibility: this.properties.show ? "visible" : "none",
                     "text-field": ['get', 'name'],
                     'text-size': ['get', 'textSize', ['get', 'style']],
                     'icon-image': ['get', 'pointIcon', ['get', 'style']],
@@ -536,6 +537,7 @@ class MarkerLayer extends AbstractLinkP<MarkerManager> {
                 type: 'line',
                 source: this.properties.id,
                 layout: {
+                    visibility: this.properties.show ? "visible" : "none",
                 },
                 paint: {
                     "line-color": ['get', 'lineColor', ['get', 'style']],
@@ -547,6 +549,7 @@ class MarkerLayer extends AbstractLinkP<MarkerManager> {
                 type: 'fill',
                 source: this.properties.id,
                 layout: {
+                    visibility: this.properties.show ? "visible" : "none",
                 },
                 paint: {
                     "fill-color": ['get', 'polygonColor', ['get', 'style']],
@@ -557,7 +560,9 @@ class MarkerLayer extends AbstractLinkP<MarkerManager> {
                 id: this.properties.id + '_polygon_outline',
                 type: 'line',
                 source: this.properties.id,
-                layout: {},
+                layout: {
+                    visibility: this.properties.show ? "visible" : "none",
+                },
                 paint: {
                     "line-color": ['get', 'polygonOutlineColor', ['get', 'style']],
                     "line-width": ['get', 'polygonOutlineWidth', ['get', 'style']]
@@ -568,6 +573,7 @@ class MarkerLayer extends AbstractLinkP<MarkerManager> {
                 type: 'symbol',
                 source: this.properties.id,
                 layout: {
+                    visibility: this.properties.show ? "visible" : "none",
                     "text-field": ['get', 'name'],
                     'text-size': ['get', 'textSize', ['get', 'style']]
                 },
@@ -861,7 +867,8 @@ class MarkerLayer extends AbstractLinkP<MarkerManager> {
             const isEye = visible.innerHTML === eye;
             visible.innerHTML = isEye ? uneye : eye;
             this.layerGroup.show = !isEye;
-
+            // 更新图层显示状态用于持久化存储
+            this.properties.show=this.layerGroup.show;
             // oe: 用于控制以 this.properties.name 为 id 的图层，即基础图层（海岸线、专属经济区），这样该图层可不设置 markerOptions.featureCollection.features，显隐功能直接应用于图层
             if (readonlyLayers.includes(this.properties.name) && this.map.getLayer(this.properties.name))
                 this.map.setLayoutProperty(this.properties.name, "visibility", this.layerGroup.show ? "visible" : "none");
