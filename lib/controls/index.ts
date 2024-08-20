@@ -10,3 +10,4 @@ export * from './LocationControl';
 export * from './ZoomControl';
 export * from './EyeControl';
 export * from './GridControl';
+export * from './DepthControl';

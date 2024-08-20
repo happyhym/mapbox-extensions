@@ -89,7 +89,7 @@ export class MeasureControl implements mapboxgl.IControl {
 
         options.horizontal ??= false;
         options.btnBgColor ??= "transparent"; //"#ffffff";
-        options.btnActiveColor ??= '#ddd';
+        options.btnActiveColor ??= "#87ceeb";
         options.enableModes ??= ['Point', 'Profile', 'LineString', 'Polygon'];
         options.geometryClick ??= false;
         options.measurePointOptions ??= {};
@@ -156,7 +156,10 @@ export class MeasureControl implements mapboxgl.IControl {
             const type = this.currentMeasure.type;
 
             // 停止测量
-            isMeasuring=false;
+            isMeasuring = false;
+            let depthIndexSelector = document.getElementById("depthIndexSelector");
+            if (depthIndexSelector)
+                depthIndexSelector.style.display = "none";
             this.currentMeasure.stop();
             // 颜色恢复默认
             this.measures.get(this.currentMeasure.type)!.controlElement!.style.background = this.options.btnBgColor!
@@ -190,13 +193,13 @@ export class MeasureControl implements mapboxgl.IControl {
             this.currentMeasure?.start();
 
             // 响应 esc 键（按下 esc 键停止测量）
-            isMeasuring=true;
+            isMeasuring = true;
             document.addEventListener("keydown", this.escapeHandler, true);
         }
     }
 
     private escapeHandler = (event: KeyboardEvent) => {
-        if (event.key == "Escape") {               
+        if (event.key == "Escape") {
             // 响应 esc 键（按下 esc 键停止测量）
             document.removeEventListener("keydown", this.escapeHandler, true);
             this.stop();
