@@ -101,6 +101,7 @@ export class MarkerControl extends AbstractExtendControl {
         ops.icon ??= new svg.SvgBuilder('flag').create();
         ops.position ??= 'top-right';
         ops.markerOptions ??= {};
+        ops.markerOptions.enableHeader ??= false;
         ops.markerOptions.drawAfterOffset ??= ops.position.endsWith("right") ? [-400, 0] : [400, 0];
 
         language.reset(ops.resetLang);

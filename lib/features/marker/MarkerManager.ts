@@ -20,6 +20,7 @@ declare const redo: any;
 declare const saveLayer: any;
 declare const readonlyLayers: any;
 declare const trackReplay: any;
+declare const updateWOALayer: any;
 
 // oe: 要从数据库中删除的图层
 let layersToDeleted: any = [];
@@ -44,6 +45,8 @@ interface MarkerLayerOptions {
 }
 
 export interface MarkerManagerOptions {
+    // 是否显示顶部工具栏，默认不显示顶部工具栏
+    enableHeader?: boolean,
     layers?: MarkerLayerProperties[],
     featureCollection?: GeoJSON.FeatureCollection<GeoJSON.Geometry, MarkerFeatrueProperties>,
     drawAfterOffset?: [number, number],
@@ -85,6 +88,7 @@ export default class MarkerManager {
 
         options.featureCollection ??= { type: 'FeatureCollection', features: [] };
         options.layerOptions ??= {};
+        // options.enableHeader ??= true;
 
         // 无图层，新建默认图层
         if (!options.layers || options.layers.length === 0) {
@@ -246,6 +250,11 @@ export default class MarkerManager {
         this.htmlElement = dom.createHtmlElement('div', ['jas-ctrl-marker']);
         this.layerContainer = dom.createHtmlElement('div', ['jas-ctrl-marker-data'], this.markerLayers.map(x => x.htmlElement));
 
+        if (options.enableHeader == false) {
+            this.htmlElement.append(this.layerContainer);
+            return;
+        }
+        // enableHeader 为 false 时，不加载 Header
         const header = dom.createHtmlElement('div', ['jas-ctrl-marker-header'], [
             //this.createHeaderSearch(),// oe: HeaderSearch 单独占一行
             this.createHeaderAddLayer(),
@@ -630,6 +639,7 @@ class MarkerLayer extends AbstractLinkP<MarkerManager> {
             });
         });
 
+        // 设置图层组标题
         this.nameElement.innerText = properties.name;
         this.itemContainerElement.append(...this.items.map(x => x.htmlElement));
         this.itemContainerElement.style.paddingLeft = '16px';
@@ -854,11 +864,23 @@ class MarkerLayer extends AbstractLinkP<MarkerManager> {
     }
 
     private createSuffixVisible() {
+        const visible = dom.createHtmlElement('div', ["jas-ctrl-marker-suffix-item"]);
+        this.setGeometryVisible = (value: boolean) => {
+            // oe: 对于基础图层（海岸线、专属经济区）已通过设置 show 属性来控制图层的显隐
+            // visible.innerHTML = value ? eye : uneye;
+            // this.layerGroup.show = value;
+        }
+        // 世界海洋数据图集，不能同时显示多个海洋要素图层，因此不需要显示/隐藏按钮
+        if (this.properties.name.endsWith("世界海洋数据图集")) {
+            // 默认展开世界海洋数据图集
+            this.arrow.classList.toggle("jas-collapse-active");
+            this.itemContainerElement.classList.toggle("jas-ctrl-hidden");
+            return visible;
+        }
+
         const svgBuilder = new SvgBuilder('eye').resize(18, 18);
         const eye = svgBuilder.create();
         const uneye = svgBuilder.change('uneye').create();
-
-        const visible = dom.createHtmlElement('div', ["jas-ctrl-marker-suffix-item"]);
 
         // oe: 对于基础图层（海岸线、专属经济区）通过设置 show 属性来控制图层的显隐
         visible.innerHTML = this.properties.show ? eye : uneye;
@@ -868,7 +890,7 @@ class MarkerLayer extends AbstractLinkP<MarkerManager> {
             visible.innerHTML = isEye ? uneye : eye;
             this.layerGroup.show = !isEye;
             // 更新图层显示状态用于持久化存储
-            this.properties.show=this.layerGroup.show;
+            this.properties.show = this.layerGroup.show;
             // oe: 用于控制以 this.properties.name 为 id 的图层，即基础图层（海岸线、专属经济区），这样该图层可不设置 markerOptions.featureCollection.features，显隐功能直接应用于图层
             if (readonlyLayers.includes(this.properties.name) && this.map.getLayer(this.properties.name))
                 this.map.setLayoutProperty(this.properties.name, "visibility", this.layerGroup.show ? "visible" : "none");
@@ -889,12 +911,6 @@ class MarkerLayer extends AbstractLinkP<MarkerManager> {
             //     underseaLayers?.layerIds!.forEach(id => this.map.setLayoutProperty(id, "visibility", this.layerGroup.show ? "visible" : "none"));
             // }
         });
-
-        this.setGeometryVisible = (value: boolean) => {
-            // oe: 对于基础图层（海岸线、专属经济区）已通过设置 show 属性来控制图层的显隐
-            // visible.innerHTML = value ? eye : uneye;
-            // this.layerGroup.show = value;
-        }
 
         visible.style.cursor = "pointer";
         visible.style.marginLeft = "5px";
@@ -938,6 +954,7 @@ class MarkerLayer extends AbstractLinkP<MarkerManager> {
         visible.title = lang.visibility;
         return visible;
     }
+
     private createShipTrackVisible() {
         const svgBuilder = new SvgBuilder('eye').resize(18, 18);
         const eye = svgBuilder.create();
@@ -998,7 +1015,9 @@ class MarkerItem extends AbstractLinkP<MarkerLayer> {
 
         const prefix = dom.createHtmlElement('div', ['jas-flex-center']);
         const suffix = this.createSuffixElement();
-        suffix.classList.add('jas-ctrl-hidden');
+        // oe: 对于世界海洋数据图集图层，一直显示显隐按钮
+        if (!feature.properties.name.includes("全球海表"))
+            suffix.classList.add('jas-ctrl-hidden');
         const content = dom.createHtmlElement('div', ['jas-ctrl-marker-item-container-content']);
         content.innerText = feature.properties.name;
 
@@ -1033,12 +1052,15 @@ class MarkerItem extends AbstractLinkP<MarkerLayer> {
                 svgBuilder.change('marker_polygon').create('svg');
         prefix.append(geometryTypeElement);
 
-        this.htmlElement.addEventListener('mouseenter', () => {
-            suffix.classList.remove('jas-ctrl-hidden');
-        });
-        this.htmlElement.addEventListener('mouseleave', () => {
-            suffix.classList.add('jas-ctrl-hidden');
-        });
+        // oe: 对于世界海洋数据图集图层，一直显示显隐按钮
+        if (!feature.properties.name.includes("全球海表")) {
+            this.htmlElement.addEventListener('mouseenter', () => {
+                suffix.classList.remove('jas-ctrl-hidden');
+            });
+            this.htmlElement.addEventListener('mouseleave', () => {
+                suffix.classList.add('jas-ctrl-hidden');
+            });
+        }
 
         this.htmlElement.append(prefix, content, suffix);
     }
@@ -1274,8 +1296,12 @@ class MarkerItem extends AbstractLinkP<MarkerLayer> {
                     });
 
             }
-            else
+            else {
+                // oe: 更新 woa 图层的显隐（互斥）
+                if (this.feature.properties.name.includes("全球海表"))
+                    updateWOALayer(this.feature.properties.name, isEye);
                 this.map.setLayoutProperty(`${this.feature.properties.name}`, "visibility", isEye ? "none" : "visible");
+            }
         });
 
         visible.style.cursor = "pointer";
