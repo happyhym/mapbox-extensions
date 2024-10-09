@@ -14,7 +14,7 @@ const { SvgBuilder } = svg;
 
 // oe: 使用 declare 关键字声明要在 Typescript 中调用已在 Javascript 中定义的全局变量或函数
 declare let isMeasuring: boolean;
-declare let woaPanelOn: any;
+declare let woaLayerOn: any;
 declare let woaProfileOn: any;
 
 export interface MeasureControlOptions {
@@ -159,8 +159,8 @@ export class MeasureControl implements mapboxgl.IControl {
 
             // 停止测量
             isMeasuring = false;
-            if (!woaPanelOn && !woaProfileOn)
-                document.getElementById("depthIndexSelector")!.style.display = "none";
+            if (!woaLayerOn && !woaProfileOn)
+                document.getElementById("depthIndexSelector")!.style.display = document.getElementById("depthIndexValue")!.style.display = "none";
             this.currentMeasure.stop();
             // 颜色恢复默认
             this.measures.get(this.currentMeasure.type)!.controlElement!.style.background = this.options.btnBgColor!
