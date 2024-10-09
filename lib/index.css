@@ -732,7 +732,7 @@
     /* height: 600px; */
     /* width: 200px; */
     display: flex;
-    padding:5px;
+    padding: 5px;
     height: auto;
     flex-direction: column;
 }
@@ -782,7 +782,7 @@
 
 .jas-ctrl-marker-headre-search {
     width: fit-content;
-    padding:8px 0px 8px 0px;
+    padding: 8px 0px 8px 0px;
 }
 
 .jas-ctrl-marker-headre-search>input {
@@ -904,4 +904,28 @@
     text-align: center;
     color: yellow;
     background-color: rgba(50, 50, 50, 0.2);
+}
+
+._d {
+    width: 15px !important;
+}
+
+._dm {
+    width: 30px !important;
+}
+
+._dms {
+    width: 50px !important;
+}
+
+#_d>input {
+    width: 15px !important;
+}
+
+#_dm>input {
+    width: 15px !important;
+}
+
+#_dms>input {
+    width: 15px !important;
 }
