@@ -42,7 +42,7 @@ export default class MeasureLineString extends MeasureBase {
      */
     constructor(map: Map, private options: MeasureLineStringOptions = {}) {
         options.showCenterText ??= true;
-        options.createText ??= (length: number) => length > 1 ? `${(length/1.852).toFixed(3)}NM\r\n${length.toFixed(3)}km` : `${(length * 1000).toFixed(2)}m`;
+        options.createText ??= (length: number) => length > 1 ? `${(length / 1.852).toFixed(3)}NM\r\n${length.toFixed(3)}km` : `${(length * 1000).toFixed(2)}m`;
 
         super(map, options);
     }
@@ -62,7 +62,8 @@ export default class MeasureLineString extends MeasureBase {
         });
 
         const segmentPointPaint: CirclePaint = {
-            'circle-color': "#fbb03b"
+            'circle-color': "#fbb03b",
+            'circle-radius': 4
         }
         this.options.segmentPointPaintBuilder?.call(undefined, segmentPointPaint);
         this.layerGroup.add({
@@ -77,12 +78,12 @@ export default class MeasureLineString extends MeasureBase {
         const labelPaint: SymbolPaint = {
             "text-color": ['case', ['==', ['get', 'center'], true], '#ff0000', "#000000"],
             "text-halo-color": "#ffffff",
-            "text-halo-width": 2,
+            "text-halo-width": 1,
         }
         const labelLayout: SymbolLayout = {
             'text-field': ['get', 'distance'],
             'text-offset': [0, -1.2],
-            'text-size': ['case', ['==', ['get', 'center'], true], 16, 16]
+            'text-size': ['case', ['==', ['get', 'center'], true], 12, 12]
         }
         this.options.labelPaintBuilder?.call(undefined, labelPaint);
         this.options.labelLayoutBuilder?.call(undefined, labelLayout);
@@ -224,7 +225,7 @@ export default class MeasureLineString extends MeasureBase {
             this.geojsonPoint.features.pop();
             this.map.off('mousemove', this.onMouseMoveHandler);
             this.map.off('contextmenu', this.onRightClickHandler);
-        }else{
+        } else {
             this.currentLine.coordinates.pop();
             this.onMouseMoveHandler(e); // 调用鼠标移动事件，重新建立动态线
             this.geojsonPoint.features.pop();  // 去掉端点
