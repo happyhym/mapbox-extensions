@@ -71,7 +71,7 @@ export default class MeasurePolygon extends MeasureBase {
 
         const outlinePaint: mapboxgl.LinePaint = {
             "line-color": "#fbb03b",
-            "line-width": 4
+            "line-width": 2
         };
         this.options.outlinePaintBuilder?.call(undefined, outlinePaint);
         this.layerGroup.add({
@@ -100,13 +100,13 @@ export default class MeasurePolygon extends MeasureBase {
             'text-field': ['format',
                 ['concat', "面积 : ", ['get', 'area']], {}, '\n', {}, '\n', {},
                 ['concat', "周长 : ", ['get', 'length']], {}],
-            'text-size': 16,
+            'text-size': 12,
             'text-justify': 'left'
         }
         const labelPaint: mapboxgl.SymbolPaint = {
             'text-color': "#000000",
             "text-halo-color": '#ffffff',
-            "text-halo-width": 2
+            "text-halo-width": 1
         };
         this.options.labelLayoutBuilder?.call(undefined, labelLayout);
         this.options.labelPaintBuilder?.call(undefined, labelPaint);
