@@ -35,7 +35,13 @@ export interface MarkerFeatrueProperties {
     centre?: string,
     radius?: number,
     // 单位换算比例，以 km 为1，则 nm=1.852、m=0.001
-    scale?: number
+    scale?: number,
+    // 度格式的经纬度坐标
+    _d?: string,
+    // 度分格式的经纬度坐标
+    _dm?: string,
+    // 度分秒格式的经纬度坐标
+    _dms?: string
 }
 
 export interface MarkerLayerProperties {

@@ -609,6 +609,38 @@ export function createFeaturePropertiesEditModal(
             })]));
     }
 
+    // 选择经纬度格式，度/度分/度分秒
+    content.append(dom.createHtmlElement('div',
+        ['jas-modal-content-edit-item'],
+        [dom.createHtmlElement('label', [], ["经纬度格式"]), dom.createHtmlElement('label', ["_d"], ["度"]), createInputBindingElement(properties, '_d', input => {
+            input.type = 'radio';
+            input.id = "_d";
+            input.name="dms_format";
+            input.title = "度格式";
+            input.style.width = '5px';
+        }), dom.createHtmlElement('label', ["_dm"], ["度分"]), createInputBindingElement(properties, '_dm', input => {
+            input.type = 'radio';
+            input.id = "_dm";
+            input.name="dms_format";
+            input.title = "度分格式";
+            input.style.width = '10px';
+        }), dom.createHtmlElement('label', ["_dms"], ["度分秒"]), createInputBindingElement(properties, '_dms', input => {
+            input.type = 'radio';
+            input.id = "_dms";
+            input.name="dms_format";
+            input.title = "度分秒格式";
+            input.style.width = '15px';
+        })]));
+        // document.getElementById("_d")!.addEventListener('input', function () {
+        //     alert("_d");
+        // });
+        // document.getElementById("_dm")!.addEventListener('input', function () {
+        //     alert("_dm");
+        // });
+        // document.getElementById("_dms")!.addEventListener('input', function () {
+        //     alert("_dms");
+        // });
+
     content.append(dom.createHtmlElement('div', ['jas-modal-content-edit-header'], [lang.word]));
 
     content.append(dom.createHtmlElement('div', ['jas-modal-content-edit-divBorder'],
@@ -761,14 +793,14 @@ function dmsConvert(dms: string): number {
     else if (_d && _m && !_s) {
         // 度分格式，如：112.2°32.6′，去掉° ′
         let d: string = dms.substring(0, dms.indexOf("°"));
-        let m: string = dms.substring(dms.indexOf("°")+1, dms.indexOf("′"));
+        let m: string = dms.substring(dms.indexOf("°") + 1, dms.indexOf("′"));
         return Number(d) + Number(m) / 60;
     }
     else if (_d && _m && _s) {
         // 度分格式，如：112.2°32.6′22.8″，去掉° ′ ″
         let d: string = dms.substring(0, dms.indexOf("°"));
-        let m: string = dms.substring(dms.indexOf("°")+1, dms.indexOf("′"));
-        let s: string = dms.substring(dms.indexOf("′")+1, dms.indexOf("″"));
+        let m: string = dms.substring(dms.indexOf("°") + 1, dms.indexOf("′"));
+        let s: string = dms.substring(dms.indexOf("′") + 1, dms.indexOf("″"));
         return Number(d) + Number(m) / 60 + Number(s) / 3600;
     }
     else {
