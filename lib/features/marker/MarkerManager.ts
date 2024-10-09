@@ -20,13 +20,14 @@ declare const redo: any;
 declare const saveLayer: any;
 declare const readonlyLayers: any;
 declare const trackReplay: any;
-declare const updateWOALayer: any;
+declare const switchWoaLayer: any;
+declare let uneyed: any;
 
 // oe: 要从数据库中删除的图层
 let layersToDeleted: any = [];
 // oe: 图层（要素）删除/重做列表
 let undoList: any = [];
-export { layersToDeleted, undoList };
+export { SvgBuilder, layersToDeleted, undoList };
 
 interface MarkerItemOptions {
     onCreate?(feature: MarkerFeatureType): void,
@@ -386,11 +387,11 @@ export default class MarkerManager {
         // oe: 在 typescript/javascript 中调用 .NET 中的函数
         // dotNetHelper.invokeMethodAsync("TestAlert", "call .NET method in javascript.");
         // oe: 撤销
-        btnUndo.addEventListener('click', () => undo());
+        btnUndo.addEventListener('click', async () => await undo());
         // oe: 重做
-        btnRedo.addEventListener('click', () => redo());
+        btnRedo.addEventListener('click', async () => await redo());
         // 将图层（图层属性及其上的所有 features）存入数据库
-        btnSaveLayer.addEventListener('click', () => saveLayer());
+        btnSaveLayer.addEventListener('click', async () => await saveLayer());
         // 从数据库加载图层
         btnRestoreLayer.addEventListener('click', () => dotNetHelper.invokeMethodAsync("FetchLayers"));
 
@@ -1016,7 +1017,7 @@ class MarkerItem extends AbstractLinkP<MarkerLayer> {
         const prefix = dom.createHtmlElement('div', ['jas-flex-center']);
         const suffix = this.createSuffixElement();
         // oe: 对于世界海洋数据图集图层，一直显示显隐按钮
-        if (!feature.properties.name.includes("全球海表"))
+        if (!feature.properties.name.includes("全球海洋"))
             suffix.classList.add('jas-ctrl-hidden');
         const content = dom.createHtmlElement('div', ['jas-ctrl-marker-item-container-content']);
         content.innerText = feature.properties.name;
@@ -1053,7 +1054,7 @@ class MarkerItem extends AbstractLinkP<MarkerLayer> {
         prefix.append(geometryTypeElement);
 
         // oe: 对于世界海洋数据图集图层，一直显示显隐按钮
-        if (!feature.properties.name.includes("全球海表")) {
+        if (!feature.properties.name.includes("全球海洋")) {
             this.htmlElement.addEventListener('mouseenter', () => {
                 suffix.classList.remove('jas-ctrl-hidden');
             });
@@ -1282,8 +1283,10 @@ class MarkerItem extends AbstractLinkP<MarkerLayer> {
 
         this.feature.properties.style.visibility ??= "visible";
         visible.innerHTML = this.feature.properties.style.visibility == "visible" ? eye : uneye;
+        visible.id = this.feature.properties.name;
+        uneyed=uneye;
 
-        visible.addEventListener('click', () => {
+        visible.addEventListener('click', async() => {
             const isEye = visible.innerHTML === eye;
             visible.innerHTML = isEye ? uneye : eye;
 
@@ -1298,8 +1301,8 @@ class MarkerItem extends AbstractLinkP<MarkerLayer> {
             }
             else {
                 // oe: 更新 woa 图层的显隐（互斥）
-                if (this.feature.properties.name.includes("全球海表"))
-                    updateWOALayer(this.feature.properties.name, isEye);
+                if (this.feature.properties.name.includes("全球海洋"))
+                   await switchWoaLayer(this.feature.properties.name, isEye);
                 this.map.setLayoutProperty(`${this.feature.properties.name}`, "visibility", isEye ? "none" : "visible");
             }
         });
