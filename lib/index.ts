@@ -3,7 +3,7 @@ import { Dict } from "./common/types";
 import { LayerGroup, SetStyleProxy } from './features'
 
 // oe: 要从数据库中删除的图层（导出后可在 javascript 中引用）
-export { layersToDeleted, undoList } from "./features/marker/MarkerManager"
+export { SvgBuilder, layersToDeleted, undoList } from "./features/marker/MarkerManager"
 
 export * from './controls';
 export * from './features';
