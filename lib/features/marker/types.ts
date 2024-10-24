@@ -26,6 +26,7 @@ export interface MarkerFeatrueProperties {
     layerId: string,
     date: number,
     style: GeometryStyle,
+    show?: boolean;
     // oe: 以回车换行为分隔符的坐标列表
     // lon1,lat1
     // lon2,lat2

@@ -613,6 +613,10 @@ class MarkerLayer extends AbstractLinkP<MarkerManager> {
             const item = array.first(this.items, x => x.feature.properties.id === feature.properties.id);
             if (!item) return;
 
+            // oe: 在底图上单击船舶时，不显示回放按钮，避免跟船舶位置信息显示重叠
+            if (item.feature.properties.id.endsWith("-ship-menu-tree"))
+                return;
+
             const center = centroid(feature as any).geometry.coordinates as [number, number];
             // 临时禁用
             //map.easeTo({ center });
@@ -934,6 +938,12 @@ class MarkerLayer extends AbstractLinkP<MarkerManager> {
             visible.innerHTML = isEye ? uneye : eye;
             this.layerGroup.show = !isEye;
 
+            // 遍历每条船，将其显示/隐藏按钮置为当前状态（有 bug，功能还未完全实现）
+            // this.items.forEach(item => {
+            //     item.suffix.innerHTML = `<div class="jas-ctrl-marker-suffix-item" title="轨迹回放" style="cursor: pointer; margin-left: 5px;"><img
+            // src="_content/IDSSE.OceanExplorer.Shared/images/svg/play.svg" style="width:18px;height:18px;"></div>${visible.innerHTML}${visible.innerHTML}`;
+            // });
+
             // oe: 用于控制以 this.properties.name 为 id 的图层组（Undersea Feature Gazetteer、文物保护区等）
             let layers = this.map.getLayerGroup(this.properties.name);
             if (layers)
@@ -994,6 +1004,7 @@ class MarkerLayer extends AbstractLinkP<MarkerManager> {
 }
 
 class MarkerItem extends AbstractLinkP<MarkerLayer> {
+    public suffix: any;
     readonly htmlElement = dom.createHtmlElement('div', ['jas-ctrl-marker-item-container']);
     public readonly reName: (name: string) => void;
 
@@ -1015,10 +1026,10 @@ class MarkerItem extends AbstractLinkP<MarkerLayer> {
         this.htmlElement.classList.add(...MarkerItem.getGeometryMatchClasses(feature));
 
         const prefix = dom.createHtmlElement('div', ['jas-flex-center']);
-        const suffix = this.createSuffixElement();
+        this.suffix = this.createSuffixElement();
         // oe: 对于世界海洋数据图集图层，一直显示显隐按钮
         if (!feature.properties.name.includes("全球海洋"))
-            suffix.classList.add('jas-ctrl-hidden');
+            this.suffix.classList.add('jas-ctrl-hidden');
         const content = dom.createHtmlElement('div', ['jas-ctrl-marker-item-container-content']);
         content.innerText = feature.properties.name;
 
@@ -1056,14 +1067,14 @@ class MarkerItem extends AbstractLinkP<MarkerLayer> {
         // oe: 对于世界海洋数据图集图层，一直显示显隐按钮
         if (!feature.properties.name.includes("全球海洋")) {
             this.htmlElement.addEventListener('mouseenter', () => {
-                suffix.classList.remove('jas-ctrl-hidden');
+                this.suffix.classList.remove('jas-ctrl-hidden');
             });
             this.htmlElement.addEventListener('mouseleave', () => {
-                suffix.classList.add('jas-ctrl-hidden');
+                this.suffix.classList.add('jas-ctrl-hidden');
             });
         }
 
-        this.htmlElement.append(prefix, content, suffix);
+        this.htmlElement.append(prefix, content, this.suffix);
     }
 
     static getGeometryMatchClass(feature: GeoJSON.Feature) {
@@ -1114,14 +1125,20 @@ class MarkerItem extends AbstractLinkP<MarkerLayer> {
         editGeometry?: boolean
     } = {}) {
         const element = dom.createHtmlElement('div', ['jas-ctrl-marker-suffix']);
-        if (options.editGeometry) element.append(this.createSuffixEditGeometry());
+
         // oe: 船舶航行动态数据分析（船舶列表）
         if (this.feature.properties.id.endsWith("-ship-menu-tree")) {
             element.append(
-                this.createSuffixReplay()
+                this.createSuffixReplay(),
+                this.createShipLocationVisible(),
+                this.createShipTrackVisible()
             );
+            return element;
         }
-        else if (this.feature.properties.id.endsWith("-readonly")) {
+
+        if (options.editGeometry) element.append(this.createSuffixEditGeometry());
+
+        if (this.feature.properties.id.endsWith("-readonly")) {
             element.append(
                 this.createSuffixVisible()
             );
@@ -1284,9 +1301,9 @@ class MarkerItem extends AbstractLinkP<MarkerLayer> {
         this.feature.properties.style.visibility ??= "visible";
         visible.innerHTML = this.feature.properties.style.visibility == "visible" ? eye : uneye;
         visible.id = this.feature.properties.name;
-        uneyed=uneye;
+        uneyed = uneye;
 
-        visible.addEventListener('click', async() => {
+        visible.addEventListener('click', async () => {
             const isEye = visible.innerHTML === eye;
             visible.innerHTML = isEye ? uneye : eye;
 
@@ -1302,7 +1319,7 @@ class MarkerItem extends AbstractLinkP<MarkerLayer> {
             else {
                 // oe: 更新 woa 图层的显隐（互斥）
                 if (this.feature.properties.name.includes("全球海洋"))
-                   await switchWoaLayer(this.feature.properties.name, isEye);
+                    await switchWoaLayer(this.feature.properties.name, isEye);
                 this.map.setLayoutProperty(`${this.feature.properties.name}`, "visibility", isEye ? "none" : "visible");
             }
         });
@@ -1310,6 +1327,48 @@ class MarkerItem extends AbstractLinkP<MarkerLayer> {
         visible.style.cursor = "pointer";
         visible.style.marginLeft = "5px";
         visible.title = lang.visibility;
+        return visible;
+    }
+
+    private createShipLocationVisible() {
+        const svgBuilder = new SvgBuilder('eye').resize(18, 18);
+        const eye = svgBuilder.create();
+        const uneye = svgBuilder.change('uneye').create();
+
+        const visible = dom.createHtmlElement('div', ["jas-ctrl-marker-suffix-item"]);
+
+        visible.innerHTML = this.feature.properties.show ? eye : uneye;
+        visible.addEventListener('click', () => {
+            const isEye = visible.innerHTML === eye;
+            visible.innerHTML = isEye ? uneye : eye;
+            this.feature.properties.show = !isEye;
+            this.map.setLayoutProperty(`${this.feature.properties.name}-location-layer`, "visibility", this.feature.properties.show ? "visible" : "none");
+            this.map.setLayoutProperty(`${this.feature.properties.name}-status-layer`, "visibility", this.feature.properties.show ? "visible" : "none");
+        });
+
+        visible.style.cursor = "pointer";
+        visible.style.marginLeft = "5px";
+        visible.title = `${lang.visibility}船位`;
+        return visible;
+    }
+
+    private createShipTrackVisible() {
+        const svgBuilder = new SvgBuilder('eye').resize(18, 18);
+        const eye = svgBuilder.create();
+        const uneye = svgBuilder.change('uneye').create();
+
+        const visible = dom.createHtmlElement('div', ["jas-ctrl-marker-suffix-item"]);
+        visible.innerHTML = this.feature.properties.show ? eye : uneye;
+        visible.addEventListener('click', () => {
+            const isEye = visible.innerHTML === eye;
+            visible.innerHTML = isEye ? uneye : eye;
+            this.feature.properties.show = !isEye;
+            this.map.setLayoutProperty(`${this.feature.properties.name}-track-layer`, "visibility", this.feature.properties.show ? "visible" : "none");
+        });
+
+        visible.style.cursor = "pointer";
+        visible.style.marginLeft = "5px";
+        visible.title = `${lang.visibility}轨迹`;
         return visible;
     }
 
