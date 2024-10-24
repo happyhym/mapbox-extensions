@@ -615,31 +615,31 @@ export function createFeaturePropertiesEditModal(
         [dom.createHtmlElement('label', [], ["经纬度格式"]), dom.createHtmlElement('label', ["_d"], ["度"]), createInputBindingElement(properties, '_d', input => {
             input.type = 'radio';
             input.id = "_d";
-            input.name="dms_format";
+            input.name = "dms_format";
             input.title = "度格式";
             input.style.width = '5px';
         }), dom.createHtmlElement('label', ["_dm"], ["度分"]), createInputBindingElement(properties, '_dm', input => {
             input.type = 'radio';
             input.id = "_dm";
-            input.name="dms_format";
+            input.name = "dms_format";
             input.title = "度分格式";
             input.style.width = '10px';
         }), dom.createHtmlElement('label', ["_dms"], ["度分秒"]), createInputBindingElement(properties, '_dms', input => {
             input.type = 'radio';
             input.id = "_dms";
-            input.name="dms_format";
+            input.name = "dms_format";
             input.title = "度分秒格式";
             input.style.width = '15px';
         })]));
-        // document.getElementById("_d")!.addEventListener('input', function () {
-        //     alert("_d");
-        // });
-        // document.getElementById("_dm")!.addEventListener('input', function () {
-        //     alert("_dm");
-        // });
-        // document.getElementById("_dms")!.addEventListener('input', function () {
-        //     alert("_dms");
-        // });
+    // document.getElementById("_d")!.addEventListener('input', function () {
+    //     alert("_d");
+    // });
+    // document.getElementById("_dm")!.addEventListener('input', function () {
+    //     alert("_dm");
+    // });
+    // document.getElementById("_dms")!.addEventListener('input', function () {
+    //     alert("_dms");
+    // });
 
     content.append(dom.createHtmlElement('div', ['jas-modal-content-edit-header'], [lang.word]));
 
@@ -667,7 +667,7 @@ export function createFeaturePropertiesEditModal(
         getMapMarkerSpriteImages(images => {
             const imagesContainer = dom.createHtmlElement('div');
             imagesContainer.style.width = '300px';
-            imagesContainer.style.height = '220px';
+            imagesContainer.style.height = '120px';
             imagesContainer.style.overflowY = 'auto';
 
             let lastClickImg: HTMLImageElement;
@@ -704,7 +704,7 @@ export function createFeaturePropertiesEditModal(
                 dom.createHtmlElement('div', ['jas-modal-content-edit-item'], [
                     dom.createHtmlElement('label', [], [lang.iconText]), imagesContainer]),
                 dom.createHtmlElement('div', ['jas-modal-content-edit-item'], [
-                    dom.createHtmlElement('label', [], [lang.iconText]), createColorBindingElement(properties.style, 'pointIconColor')]),
+                    dom.createHtmlElement('label', [], [`${lang.iconText}颜色`]), createColorBindingElement(properties.style, 'pointIconColor')]),
                 dom.createHtmlElement('div', ['jas-modal-content-edit-item'], [
                     dom.createHtmlElement('label', [], [lang.iconSize]), createInputBindingElement(properties.style, 'pointIconSize', input => {
                         input.type = 'number';
