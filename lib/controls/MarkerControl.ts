@@ -118,9 +118,12 @@ export class MarkerControl extends AbstractExtendControl {
     createContent() {
         return (map: mapboxgl.Map) => {
             getMapMarkerSpriteImages(images => {
-                images.forEach((v, k) => {
-                    map.addImage(k, v.data, { sdf: true });
-                });
+                try {
+                    images.forEach((v, k) => {
+                        map.addImage(k, v.data, { sdf: true });
+                    });
+                }
+                catch (e) { }
             });
 
             this._markerManager = new MarkerManager(map, this.ops.markerOptions);
