@@ -68,7 +68,7 @@ export class GridControl implements mapboxgl.IControl {
                         'visibility': 'none'
                     },
                     'paint': {
-                        'line-color': that.options.color,
+                        'line-color': "#4169e1",//that.options.color,
                         'line-width': 1,
                         "line-dasharray": [2, 10],
                         "line-opacity": 0.5
@@ -91,21 +91,21 @@ export class GridControl implements mapboxgl.IControl {
                         "text-field": ["format", ["get", "col1"], {
                             "text-font": ["literal", ["Open Sans Regular"]],
                             "text-color": that.options.color,
-                            "font-scale": 0.8
+                            "font-scale": 1.0
                         }, " ",
                             ["get", "col2"], {
                                 "text-font": ["literal", ["DIN Offc Pro Italic"]],
                                 "text-color": that.options.color,
-                                "font-scale": 0.8
+                                "font-scale": 1.0
                             }, " ",
                             ["get", "col3"], {
                                 "text-font": ["literal", ["Arial Unicode MS Regular"]],
                                 "text-color": that.options.color,
-                                "font-scale": 0.8
+                                "font-scale": 1.0
                             }],
                         "text-size": that.options.textSize,
                         "text-font": ["Open Sans Regular", "Arial Unicode MS Regular"],
-                        "text-offset": [0.5, 0],
+                        "text-offset": [0.3, 0],
                         "text-anchor": "left",
                         "text-justify": "left",
                         "text-max-width": 20,
@@ -129,17 +129,17 @@ export class GridControl implements mapboxgl.IControl {
                     "text-field": ["format", ["get", "col1"], {
                         "text-font": ["literal", ["Open Sans Regular"]],
                         "text-color": that.options.color,
-                        "font-scale": 0.8
+                        "font-scale": 1.0
                     }, " ",
                         ["get", "col2"], {
                             "text-font": ["literal", ["DIN Offc Pro Italic"]],
                             "text-color": that.options.color,
-                            "font-scale": 0.8
+                            "font-scale": 1.0
                         }, " ",
                         ["get", "col3"], {
                             "text-font": ["literal", ["Arial Unicode MS Regular"]],
                             "text-color": that.options.color,
-                            "font-scale": 0.8
+                            "font-scale": 1.0
                         }],
                     "text-size": that.options.textSize,
                     "text-font": ["Open Sans Regular", "Arial Unicode MS Regular"],
@@ -167,21 +167,21 @@ export class GridControl implements mapboxgl.IControl {
                     "text-field": ["format", ["get", "col1"], {
                         "text-font": ["literal", ["Open Sans Regular"]],
                         "text-color": that.options.color,
-                        "font-scale": 0.8
+                        "font-scale": 1.0
                     }, " ",
                         ["get", "col2"], {
                             "text-font": ["literal", ["DIN Offc Pro Italic"]],
                             "text-color": that.options.color,
-                            "font-scale": 0.8
+                            "font-scale": 1.0
                         }, " ",
                         ["get", "col3"], {
                             "text-font": ["literal", ["Arial Unicode MS Regular"]],
                             "text-color": that.options.color,
-                            "font-scale": 0.8
+                            "font-scale": 1.0
                         }],
                     "text-size": that.options.textSize,
                     "text-font": ["Open Sans Regular", "Arial Unicode MS Regular"],
-                    "text-offset": [-1.5, 1],
+                    "text-offset": [-1.5, 0.6],
                     "text-anchor": "left",
                     "text-justify": "left",
                     "text-max-width": 20,
@@ -205,21 +205,21 @@ export class GridControl implements mapboxgl.IControl {
                     "text-field": ["format", ["get", "col1"], {
                         "text-font": ["literal", ["Open Sans Regular"]],
                         "text-color": that.options.color,
-                        "font-scale": 0.8
+                        "font-scale": 1.0
                     }, " ",
                         ["get", "col2"], {
                             "text-font": ["literal", ["DIN Offc Pro Italic"]],
                             "text-color": that.options.color,
-                            "font-scale": 0.8
+                            "font-scale": 1.0
                         }, " ",
                         ["get", "col3"], {
                             "text-font": ["literal", ["Arial Unicode MS Regular"]],
                             "text-color": that.options.color,
-                            "font-scale": 0.8
+                            "font-scale": 1.0
                         }],
                     "text-size": that.options.textSize,
                     "text-font": ["Open Sans Regular", "Arial Unicode MS Regular"],
-                    "text-offset": [-1.5, -1],
+                    "text-offset": [-1.5, -0.6],
                     "text-anchor": "left",
                     "text-justify": "left",
                     "text-max-width": 20,
