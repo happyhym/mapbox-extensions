@@ -752,7 +752,7 @@ class MarkerLayer extends AbstractLinkP<MarkerManager> {
             suffix.classList.add('jas-ctrl-hidden');
         });
 
-        if (this.properties.name.endsWith("船"))
+        if (this.properties.name.includes("探索") || this.properties.name.endsWith("船"))
             header.append(content, suffix, this.createShipLocationVisible(), this.createShipTrackVisible());
         else
             header.append(content, suffix, this.createSuffixVisible());
@@ -875,12 +875,13 @@ class MarkerLayer extends AbstractLinkP<MarkerManager> {
             // visible.innerHTML = value ? eye : uneye;
             // this.layerGroup.show = value;
         }
-        // 世界海洋数据图集，不能同时显示多个海洋要素图层，因此不需要显示/隐藏按钮
-        if (this.properties.name.endsWith("世界海洋数据图集")) {
+        if (["世界海洋数据图集", "海南省深海技术创新中心展"].includes(this.properties.name)) {
             // 默认展开世界海洋数据图集
             this.arrow.classList.toggle("jas-collapse-active");
             this.itemContainerElement.classList.toggle("jas-ctrl-hidden");
-            return visible;
+            // 世界海洋数据图集，不能同时显示多个海洋要素图层，因此不需要显示/隐藏按钮，直接返回
+            if (this.properties.name.endsWith("世界海洋数据图集"))
+                return visible;
         }
 
         const svgBuilder = new SvgBuilder('eye').resize(18, 18);
@@ -924,6 +925,12 @@ class MarkerLayer extends AbstractLinkP<MarkerManager> {
     }
 
     private createShipLocationVisible() {
+        if (this.properties.name.includes("探索系列")) {
+            // 默认展开探索系列和海监船舶
+            this.arrow.classList.toggle("jas-collapse-active");
+            this.itemContainerElement.classList.toggle("jas-ctrl-hidden");
+        }
+
         const svgBuilder = new SvgBuilder('eye').resize(18, 18);
         const eye = svgBuilder.create();
         const uneye = svgBuilder.change('uneye').create();
@@ -962,7 +969,7 @@ class MarkerLayer extends AbstractLinkP<MarkerManager> {
 
         visible.style.cursor = "pointer";
         visible.style.marginLeft = "5px";
-        visible.title = lang.visibility;
+        visible.title = `${lang.visibility}船位`;
         return visible;
     }
 
@@ -998,7 +1005,7 @@ class MarkerLayer extends AbstractLinkP<MarkerManager> {
 
         visible.style.cursor = "pointer";
         visible.style.marginLeft = "5px";
-        visible.title = lang.visibility;
+        visible.title = `${lang.visibility}轨迹`;
         return visible;
     }
 }
@@ -1027,8 +1034,8 @@ class MarkerItem extends AbstractLinkP<MarkerLayer> {
 
         const prefix = dom.createHtmlElement('div', ['jas-flex-center']);
         this.suffix = this.createSuffixElement();
-        // oe: 对于世界海洋数据图集图层，一直显示显隐按钮
-        if (!feature.properties.name.includes("全球海洋"))
+        // oe: 对于世界海洋数据图集图层和每条船舶，一直显示显隐按钮
+        if (!feature.properties.name.includes("全球海洋") && !feature.properties.id.endsWith("-ship-menu-tree"))
             this.suffix.classList.add('jas-ctrl-hidden');
         const content = dom.createHtmlElement('div', ['jas-ctrl-marker-item-container-content']);
         content.innerText = feature.properties.name;
@@ -1064,8 +1071,8 @@ class MarkerItem extends AbstractLinkP<MarkerLayer> {
                 svgBuilder.change('marker_polygon').create('svg');
         prefix.append(geometryTypeElement);
 
-        // oe: 对于世界海洋数据图集图层，一直显示显隐按钮
-        if (!feature.properties.name.includes("全球海洋")) {
+        // oe: 对于世界海洋数据图集图层和每条船舶，一直显示显隐按钮
+        if (!feature.properties.name.includes("全球海洋") && !feature.properties.id.endsWith("-ship-menu-tree")) {
             this.htmlElement.addEventListener('mouseenter', () => {
                 this.suffix.classList.remove('jas-ctrl-hidden');
             });
@@ -1126,7 +1133,7 @@ class MarkerItem extends AbstractLinkP<MarkerLayer> {
     } = {}) {
         const element = dom.createHtmlElement('div', ['jas-ctrl-marker-suffix']);
 
-        // oe: 船舶航行动态数据分析（船舶列表）
+        // oe: 船舶航行动态数据分析（船舶列表），每条船都有显示/隐藏按钮
         if (this.feature.properties.id.endsWith("-ship-menu-tree")) {
             element.append(
                 this.createSuffixReplay(),
