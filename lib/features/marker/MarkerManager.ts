@@ -879,10 +879,10 @@ class MarkerLayer extends AbstractLinkP<MarkerManager> {
             // 默认展开世界海洋数据图集
             this.arrow.classList.toggle("jas-collapse-active");
             this.itemContainerElement.classList.toggle("jas-ctrl-hidden");
-            // 世界海洋数据图集，不能同时显示多个海洋要素图层，因此不需要显示/隐藏按钮，直接返回
-            if (this.properties.name.endsWith("世界海洋数据图集"))
-                return visible;
         }
+        // 世界海洋数据图集，不能同时显示多个海洋要素图层，因此不需要显示/隐藏按钮，直接返回
+        if (["世界海洋数据图集", "海洋模式再分析流场数据图集"].includes(this.properties.name))
+            return visible;
 
         const svgBuilder = new SvgBuilder('eye').resize(18, 18);
         const eye = svgBuilder.create();
