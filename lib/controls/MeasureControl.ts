@@ -16,6 +16,8 @@ const { SvgBuilder } = svg;
 declare let isMeasuring: boolean;
 declare let woaLayerOn: any;
 declare let woaProfileOn: any;
+declare let velocityLayerOn: any;
+declare let velocityProfileOn: any;
 
 export interface MeasureControlOptions {
 

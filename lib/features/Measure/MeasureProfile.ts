@@ -7,10 +7,12 @@ import MeasureBase, { MeasureOptions, MeasureType } from "./MeasureBase";
 declare const dotNetHelper: any;
 declare const showProfile: any;
 declare const depthIndex: any;
-declare let depthLon: any;
-declare let depthLat: any;
+declare let woaDepthLon: any;
+declare let woaDepthLat: any;
 declare let woaLayerOn: any;
 declare let woaProfileOn: any;
+declare let velocityLayerOn: any;
+declare let velocityProfileOn: any;
 
 let that: MeasureProfile;
 export function showElevation(elevation: number): void {
@@ -132,10 +134,11 @@ export default class MeasureProfile extends MeasureBase {
     }
 
     private onMapClickHandle = async (e: mapboxgl.MapMouseEvent & mapboxgl.EventData) => {
-        depthLon = e.lngLat.lng;
-        depthLat = e.lngLat.lat;
+        woaDepthLon = e.lngLat.lng;
+        woaDepthLat = e.lngLat.lat;
         // oe: 显示剖面曲线图
         //showProfile(e.lngLat.lng, e.lngLat.lat);
-        dotNetHelper.invokeMethodAsync("ShowWoaData", e.lngLat.lng, e.lngLat.lat, depthIndex)
+        await dotNetHelper.invokeMethodAsync("ShowWoaData", e.lngLat.lng, e.lngLat.lat, depthIndex)
+        await dotNetHelper.invokeMethodAsync("ShowVelocityData", e.lngLat.lng, e.lngLat.lat, depthIndex)
     }
 }
