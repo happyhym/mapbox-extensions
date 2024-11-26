@@ -1,6 +1,8 @@
 import mapboxgl from "mapbox-gl";
 import { dom } from 'wheater';
 
+declare let eyeControlLayer: any;
+
 export interface EyeControlOptions {
     /**
      * 控件默认位置
@@ -24,7 +26,6 @@ export interface EyeControlOptions {
  * 鹰眼控件
  */
 export class EyeControl implements mapboxgl.IControl {
-
     readonly element = dom.createHtmlElement('div', ["jas-ctrl-eye", "mapboxgl-ctrl"]);
     readonly overviewBoxSourceId = "overviewBox";
     private get currentPolygon(): GeoJSON.Feature<GeoJSON.Polygon, null> {
@@ -58,7 +59,7 @@ export class EyeControl implements mapboxgl.IControl {
             attributionControl: false,
             preserveDrawingBuffer: true
         });
-        
+
         //获取或设置光标：default、pointer、auto、crosshair、move、text、help、wait
         overviewMap.getCanvas().style.cursor = "default";
 
@@ -133,11 +134,17 @@ export class EyeControl implements mapboxgl.IControl {
         map.on('idle', () => {
             if (!this.options.layoutSync)
                 return;
-            var maplayers = map.getStyle().layers;
-            var ovmaplayers = overviewMap.getStyle().layers;
+            let maplayers = map.getStyle().layers;
+            let ovmaplayers = overviewMap.getStyle().layers;
             for (let layer of maplayers) {
-                if (ovmaplayers.find(l => l.id == layer.id))
-                    overviewMap.setLayoutProperty(layer.id, "visibility", map.getLayoutProperty(layer.id, "visibility"));
+                if (ovmaplayers.find((l: any) => l.id == layer.id))
+                    // 所有图层的显示/隐藏状态与主地图同步
+                    // overviewMap.setLayoutProperty(layer.id, "visibility", map.getLayoutProperty(layer.id, "visibility"));
+                    // 仅显示海岸线、IDSSE、IDSSE_GRAY、影像地图、谷歌地图，不显示其他图层
+                    if (eyeControlLayer.includes(layer.id))
+                        overviewMap.setLayoutProperty(layer.id, "visibility", map.getLayoutProperty(layer.id, "visibility"));
+                    else
+                        overviewMap.setLayoutProperty(layer.id, "visibility", "none");
             }
         });
         overviewMap.on("drag", overviewdrag);
