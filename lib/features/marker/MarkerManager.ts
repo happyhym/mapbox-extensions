@@ -21,6 +21,7 @@ declare const saveLayer: any;
 declare const readonlyLayers: any;
 declare const trackReplay: any;
 declare const switchWoaLayer: any;
+declare const switchVelocityLayer: any;
 declare let uneyed: any;
 
 // oe: 要从数据库中删除的图层
@@ -903,9 +904,13 @@ class MarkerLayer extends AbstractLinkP<MarkerManager> {
 
             // oe: 用于控制以 this.properties.name 为 id 的图层组（Undersea Feature Gazetteer、文物保护区等）
             let layers = this.map.getLayerGroup(this.properties.name);
-            if (layers)
-                layers?.layerIds!.forEach(id => this.map.setLayoutProperty(id, "visibility", this.layerGroup.show ? "visible" : "none"));
-
+            if (layers) {
+                layers?.layerIds!.forEach(id => {
+                    // alert(id);
+                    this.map.setLayoutProperty(id, "visibility", this.layerGroup.show ? "visible" : "none");
+                }
+                );
+            }
             // 通过船舶位置图层控制 shipLocation 图层的显示/隐藏
             // if (this.properties.id == "shipLocation") {
             //     let shipLocationLayers = this.map.getLayerGroup("船舶位置");
@@ -1035,7 +1040,8 @@ class MarkerItem extends AbstractLinkP<MarkerLayer> {
         const prefix = dom.createHtmlElement('div', ['jas-flex-center']);
         this.suffix = this.createSuffixElement();
         // oe: 对于世界海洋数据图集图层和每条船舶，一直显示显隐按钮
-        if (!feature.properties.name.includes("全球海洋") && !feature.properties.id.endsWith("-ship-menu-tree"))
+        // ["全球海洋","平均流场分布"].find(item => feature.properties.name.includes(item))
+        if (!["全球海洋", "平均流场分布"].find(item => feature.properties.name.includes(item)) && !feature.properties.id.endsWith("-ship-menu-tree"))
             this.suffix.classList.add('jas-ctrl-hidden');
         const content = dom.createHtmlElement('div', ['jas-ctrl-marker-item-container-content']);
         content.innerText = feature.properties.name;
@@ -1072,7 +1078,7 @@ class MarkerItem extends AbstractLinkP<MarkerLayer> {
         prefix.append(geometryTypeElement);
 
         // oe: 对于世界海洋数据图集图层和每条船舶，一直显示显隐按钮
-        if (!feature.properties.name.includes("全球海洋") && !feature.properties.id.endsWith("-ship-menu-tree")) {
+        if (!["全球海洋", "平均流场分布"].find(item => feature.properties.name.includes(item)) && !feature.properties.id.endsWith("-ship-menu-tree")) {
             this.htmlElement.addEventListener('mouseenter', () => {
                 this.suffix.classList.remove('jas-ctrl-hidden');
             });
@@ -1327,6 +1333,9 @@ class MarkerItem extends AbstractLinkP<MarkerLayer> {
                 // oe: 更新 woa 图层的显隐（互斥）
                 if (this.feature.properties.name.includes("全球海洋"))
                     await switchWoaLayer(this.feature.properties.name, isEye);
+                // oe: 更新流场图层的显隐（互斥）
+                else if (this.feature.properties.name.includes("平均流场分布"))
+                    await switchVelocityLayer(this.feature.properties.name, isEye);
                 this.map.setLayoutProperty(`${this.feature.properties.name}`, "visibility", isEye ? "none" : "visible");
             }
         });
