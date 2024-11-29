@@ -23,6 +23,7 @@ declare const trackReplay: any;
 declare const switchWoaLayer: any;
 declare const switchVelocityLayer: any;
 declare let uneyed: any;
+declare let shp: any;
 
 // oe: 要从数据库中删除的图层
 let layersToDeleted: any = [];
@@ -779,14 +780,78 @@ class MarkerLayer extends AbstractLinkP<MarkerManager> {
         const importUI = dom.createHtmlElement('input', [], [], {
             attributes: {
                 type: "file",
-                accept: ".kml,.kmz"
+                accept: ".zip,.json,.geojson,.kml,.kmz"
             }
         });
 
         importUI.onchange = async e => {
             const file = (e.target as HTMLInputElement).files?.[0];
             if (file) {
-                if (file.name.endsWith('kml') || file.name.endsWith('kmz')) {
+                if (file.name.endsWith('zip')) {
+                    // const url = URL.createObjectURL(file);
+                    // const a = document.createElement('a');
+                    // a.href = url;
+                    // a.download = file.name;
+                    // document.body.appendChild(a);
+                    // a.click();
+                    // a.remove();
+
+                    // 获取上传文件的字节流
+                    let buffer = await file.arrayBuffer();
+
+                    // // 解压，解决中文乱码（已通过修改编译 shapefile-js 源码支持中文）
+                    // var zip = await JSZip.loadAsync(buffer)
+                    // // 没有文件需要添加
+                    // if (!Object.keys(zip['files']).some(item => item.includes('.cpg'))) {
+                    //     var fileName = Object.keys(zip['files']).find(element => element.includes('.'))
+                    //     fileName = fileName.substring(0, fileName.indexOf('.')) + '.cpg'
+                    //     zip.file(fileName, "gb2312");
+                    //     //压缩
+                    //     buffer = await zip.generateAsync({ type: 'arraybuffer' })
+                    // }
+
+                    // 解析为 geojson 对象
+                    let result =await shp.parseZip(buffer, ["white", "list"]);
+
+                    // 判断解析结果是否为数组
+                    // const isArrary = Array.isArray(result);
+                    const isArrary = result instanceof Array;
+                    let geojson = [];
+                    if (isArrary)
+                        geojson.push(...result);
+                    else
+                        geojson.push(result);
+                    geojson.forEach(async (item: any) => {
+                        const fc = await new Importer('shp').import(this.properties.id, item);
+                        if (fc.features.length > 0) {
+                            fc.features.forEach(f => this.addMarker(f));
+                            const b = bbox(fc);
+                            this.map.fitBounds([b[0], b[1], b[2], b[3]], { padding: 100 });
+                            this.collapse(false);
+                        }
+                    });
+                } else if (file.name.endsWith('json') || file.name.endsWith('geojson')) {
+                    const t = await file.text();
+                    const result = JSON.parse(t);
+                    // 判断解析结果是否为数组
+                    // const isArrary = Array.isArray(result);
+                    const isArrary = result instanceof Array;
+                    let geojson = [];
+                    if (isArrary)
+                        geojson.push(...result);
+                    else
+                        geojson.push(result);
+                    geojson.forEach(async (item: any) => {
+                        const fc = await new Importer('geojson').import(this.properties.id, item);
+                        if (fc.features.length > 0) {
+                            fc.features.forEach(f => this.addMarker(f));
+
+                            const b = bbox(fc);
+                            this.map.fitBounds([b[0], b[1], b[2], b[3]], { padding: 100 });
+                            this.collapse(false);
+                        }
+                    });
+                } else if (file.name.endsWith('kml') || file.name.endsWith('kmz')) {
                     const t = await file.text();
                     const fc = await new Importer('kml').import(this.properties.id, t);
                     if (fc.features.length > 0) {
