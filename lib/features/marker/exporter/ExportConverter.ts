@@ -19,8 +19,11 @@ import { ExportGeoJsonType, MarkerFeatrueProperties } from '../types';
 import { TCoordConvertOptions, coordConverter } from '../../../common/proj';
 import { lang } from '../../../common/lang';
 
+// geojson to shape file
+declare let shpwrite: any;
+declare let downloadFile: any;
 
-export type FileType = 'txt' | 'geojson' | 'kml' | 'dxf' | 'csv';
+export type FileType = 'geojson' | 'shp' | 'dxf' | 'kml' | 'txt' | 'csv';
 
 export type ConverterOptions = {
     coordConvertOptions?: TCoordConvertOptions
@@ -28,7 +31,7 @@ export type ConverterOptions = {
 
 export interface IExportConverter {
     readonly type: FileType;
-    convert(geojson: ExportGeoJsonType, options?: ConverterOptions): string;
+    convert(geojson: ExportGeoJsonType, options?: ConverterOptions, fileName?: string): any;
 }
 
 export class DxfConverter implements IExportConverter {
@@ -237,11 +240,13 @@ export class CSVConverter implements IExportConverter {
 
     convert(geojson: ExportGeoJsonType): string {
         const features = geojson.type === 'Feature' ? [geojson] : geojson.features;
-        const header = `name,date,style,geometry-type,geometry`;
+        // const header = `name,date,style,geometry-type,geometry`;
+        const header = `name,style,geometry-type,geometry`;
+        console.log(JSON.stringify(geojson));
 
         return header + '\n' + features.map(f =>
             this.value2Cell(f.properties.name) + ',' +
-            date.formatDate(new Date(f.properties.date), 'yyyy-MM-dd HH:mm:ss') + ',' +
+            // date.formatDate(new Date(f.properties.date), 'yyyy-MM-dd HH:mm:ss') + ',' +
             this.value2Cell(JSON.stringify(f.properties.style)) + ',' +
             f.geometry.type + ',' +
             this.value2Cell(JSON.stringify(f.geometry))).join('\n');
@@ -254,4 +259,30 @@ export class CSVConverter implements IExportConverter {
     }
 }
 
-export const export_converters = [new TxtConverter(), new GeoJsonConverter(), new KmlConverter(), new DxfConverter(), new CSVConverter()];
+export class ShapeFileConverter implements IExportConverter {
+    readonly type = 'shp';
+    convert(geojson: ExportGeoJsonType, options?: ConverterOptions, fileName?: string): any {
+        const shapeOptions: any = {
+            folder: "shapes",
+            filename: "shapes",
+            outputType: "blob",
+            compression: "DEFLATE",
+            types: {
+                point: "points",
+                line: 'lines',
+                polygon: "polygons",
+                polyline: "polylines"
+            },
+        };
+
+        // 以下两种方法都可以
+        shpwrite.zip(geojson, shapeOptions).then(function (content: any) {
+            downloadFile(`${fileName}.zip`, content);
+        });
+        // download 函数会自动添加 zip 后缀
+        // shapeOptions.filename=fileName;
+        // shpwrite.download(geojson, shapeOptions);  
+    }
+}
+
+export const export_converters = [new GeoJsonConverter(), new ShapeFileConverter(), new DxfConverter(), new KmlConverter(), new TxtConverter(), new CSVConverter()];

@@ -197,7 +197,8 @@ export function createExportModal(fileName: string, geojson: ExportGeoJsonType) 
             ]),
         ])]);
 
-    let exportFileType: FileType = 'dxf';
+    let exportFileType: FileType = 'shp';
+    projUI.style.display = 'none';
     const label_select = dom.createHtmlElement('div', [], [
         dom.createHtmlElement('span', [], [lang.fileType]),
         dom.createHtmlElement('select', ['jas-select'], [], {
@@ -609,28 +610,29 @@ export function createFeaturePropertiesEditModal(
             })]));
     }
 
-    // 选择经纬度格式，度/度分/度分秒
-    content.append(dom.createHtmlElement('div',
-        ['jas-modal-content-edit-item'],
-        [dom.createHtmlElement('label', [], ["经纬度格式"]), dom.createHtmlElement('label', ["_d"], ["度"]), createInputBindingElement(properties, '_d', input => {
-            input.type = 'radio';
-            input.id = "_d";
-            input.name = "dms_format";
-            input.title = "度格式";
-            input.style.width = '5px';
-        }), dom.createHtmlElement('label', ["_dm"], ["度分"]), createInputBindingElement(properties, '_dm', input => {
-            input.type = 'radio';
-            input.id = "_dm";
-            input.name = "dms_format";
-            input.title = "度分格式";
-            input.style.width = '10px';
-        }), dom.createHtmlElement('label', ["_dms"], ["度分秒"]), createInputBindingElement(properties, '_dms', input => {
-            input.type = 'radio';
-            input.id = "_dms";
-            input.name = "dms_format";
-            input.title = "度分秒格式";
-            input.style.width = '15px';
-        })]));
+    // 选择经纬度格式，度/度分/度分秒，（功能未完成，待完成后启用）
+    // content.append(dom.createHtmlElement('div',
+    //     ['jas-modal-content-edit-item'],
+    //     [dom.createHtmlElement('label', [], ["经纬度格式"]), dom.createHtmlElement('label', ["_d"], ["度"]), createInputBindingElement(properties, '_d', input => {
+    //         input.type = 'radio';
+    //         input.id = "_d";
+    //         input.name = "dms_format";
+    //         input.title = "度格式";
+    //         input.style.width = '5px';
+    //     }), dom.createHtmlElement('label', ["_dm"], ["度分"]), createInputBindingElement(properties, '_dm', input => {
+    //         input.type = 'radio';
+    //         input.id = "_dm";
+    //         input.name = "dms_format";
+    //         input.title = "度分格式";
+    //         input.style.width = '10px';
+    //     }), dom.createHtmlElement('label', ["_dms"], ["度分秒"]), createInputBindingElement(properties, '_dms', input => {
+    //         input.type = 'radio';
+    //         input.id = "_dms";
+    //         input.name = "dms_format";
+    //         input.title = "度分秒格式";
+    //         input.style.width = '15px';
+    //     })]));
+
     // document.getElementById("_d")!.addEventListener('input', function () {
     //     alert("_d");
     // });
