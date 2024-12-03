@@ -24,6 +24,7 @@ declare const switchWoaLayer: any;
 declare const switchVelocityLayer: any;
 declare let uneyed: any;
 declare let shp: any;
+declare let userName:string;
 
 // oe: 要从数据库中删除的图层
 let layersToDeleted: any = [];
@@ -941,11 +942,17 @@ class MarkerLayer extends AbstractLinkP<MarkerManager> {
             // visible.innerHTML = value ? eye : uneye;
             // this.layerGroup.show = value;
         }
-        if (["世界海洋数据图集", "海南省深海技术创新中心展"].includes(this.properties.name)) {
+        if (["世界海洋数据图集"].includes(this.properties.name)) {
             // 默认展开世界海洋数据图集
             this.arrow.classList.toggle("jas-collapse-active");
             this.itemContainerElement.classList.toggle("jas-ctrl-hidden");
         }
+        // dstic 用户登录时展开海南省深海技术创新中心展
+        if (["海南省深海技术创新中心展"].includes(this.properties.name) && userName=="dstic") {
+            this.arrow.classList.toggle("jas-collapse-active");
+            this.itemContainerElement.classList.toggle("jas-ctrl-hidden");
+        }
+
         // 世界海洋数据图集，不能同时显示多个海洋要素图层，因此不需要显示/隐藏按钮，直接返回
         if (["世界海洋数据图集", "海洋模式再分析流场数据图集"].includes(this.properties.name))
             return visible;
@@ -1454,9 +1461,9 @@ class MarkerItem extends AbstractLinkP<MarkerLayer> {
     }
 
     private createSuffixReplay() {
-        // const svgBuilder = new SvgBuilder('play').resize(18, 18);
-        const play = `<img src="_content/IDSSE.OceanExplorer.Shared/images/svg/play.svg" style="width:18px;height:18px;" />`;//svgBuilder.create();
-        const stop = `<img src="_content/IDSSE.OceanExplorer.Shared/images/svg/stop.svg" style="width:18px;height:18px;" />`;//svgBuilder.change('stop').create();
+        const svgBuilder = new SvgBuilder('play').resize(18, 18);
+        const play = svgBuilder.create();
+        const stop = svgBuilder.change('stop').create();
 
         const btnPlay = dom.createHtmlElement('div', ["jas-ctrl-marker-suffix-item"]);
 
