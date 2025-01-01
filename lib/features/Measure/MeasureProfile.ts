@@ -139,6 +139,7 @@ export default class MeasureProfile extends MeasureBase {
         // oe: 显示剖面曲线图
         //showProfile(e.lngLat.lng, e.lngLat.lat);
         await dotNetHelper.invokeMethodAsync("ShowWoaData", e.lngLat.lng, e.lngLat.lat, depthIndex)
-        await dotNetHelper.invokeMethodAsync("ShowVelocityData", e.lngLat.lng, e.lngLat.lat, depthIndex)
+        // 临时禁用
+        // await dotNetHelper.invokeMethodAsync("ShowVelocityData", e.lngLat.lng, e.lngLat.lat, depthIndex)
     }
 }
