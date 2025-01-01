@@ -24,6 +24,7 @@ export interface MarkerFeatrueProperties {
     id: string,
     name: string,
     layerId: string,
+    description?: string;
     date: number,
     style: GeometryStyle,
     show?: boolean;
