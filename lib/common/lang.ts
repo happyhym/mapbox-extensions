@@ -43,6 +43,7 @@ interface ILanguageOptions {
     warn: string,
     confirm: string,
     cancel: string,
+    upload: string,
 
     word: string,
     point: string,
@@ -103,6 +104,7 @@ const zh: ILanguageOptions = {
     warn: "警告",
     confirm: "确认",
     cancel: "取消",
+    upload:"上传",
 
     word: "文字",
     point: "点",
@@ -162,6 +164,7 @@ const en: ILanguageOptions = {
     warn: "warning",
     confirm: "confirm",
     cancel: "cancel",
+    upload:"upload",
 
     word: "word",
     point: "point",
