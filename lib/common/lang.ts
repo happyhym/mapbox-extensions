@@ -14,6 +14,7 @@ interface ILanguageOptions {
     redo: string,
 
     markerName: string,
+    markerDescription: string,
     fontSize: string,
     fontColor: string,
     iconText: string,
@@ -76,6 +77,7 @@ const zh: ILanguageOptions = {
     redo: "重做",
 
     markerName: "标注名称",
+    markerDescription: "备注说明",
     fontSize: "大小",
     fontColor: "颜色",
     iconText: "图形",
@@ -136,6 +138,7 @@ const en: ILanguageOptions = {
     redo: "redo",
 
     markerName: "text",
+    markerDescription: "description",
     fontSize: "font size",
     fontColor: "font color",
     iconText: "icon",
