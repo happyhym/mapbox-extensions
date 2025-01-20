@@ -573,17 +573,6 @@ export function createFeaturePropertiesEditModal(
     if (!properties.description || options.mode === 'create')
         properties.description = "";
 
-    // 备注字段
-    content.append(dom.createHtmlElement('div',
-        ['jas-modal-content-edit-item'],
-        [dom.createHtmlElement('label', [], [lang.markerDescription]), createInputBindingElement(properties, 'description', input => {
-            input.type = 'text';
-            // oe: 长度由12改为32
-            input.maxLength = 32;
-            // oe: 添加 name 属性用于判断用户是否填写了标注名称
-            input.id = "description";
-        })]));
-
     // oe: 坐标列表文本框
     if (!properties?.centre && !properties?.radius)
         content.append(dom.createHtmlElement('div',
@@ -624,6 +613,14 @@ export function createFeaturePropertiesEditModal(
                 }
             })]));
     }
+
+    // 备注字段
+    content.append(dom.createHtmlElement('div',
+        ['jas-modal-content-edit-item'],
+        [dom.createHtmlElement('label', [], [lang.markerDescription]), createTextareaBindingElement(properties, 'description', textarea => {
+            textarea.rows = 3;
+            textarea.maxLength = 4096;
+        })]));
 
     // 选择经纬度格式，度/度分/度分秒，（功能未完成，待完成后启用）
     // content.append(dom.createHtmlElement('div',
