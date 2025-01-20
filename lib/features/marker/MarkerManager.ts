@@ -989,6 +989,11 @@ class MarkerLayer extends AbstractLinkP<MarkerManager> {
                 }
                 );
             }
+            // // 年度运行情况
+            // if(this.properties.name.includes("运行情况")){
+            //     alert(this.properties.name);
+            // }
+
             // 通过船舶位置图层控制 shipLocation 图层的显示/隐藏
             // if (this.properties.id == "shipLocation") {
             //     let shipLocationLayers = this.map.getLayerGroup("船舶位置");
@@ -1552,8 +1557,34 @@ class MarkerItem extends AbstractLinkP<MarkerLayer> {
         visible.addEventListener('click', async () => {
             const isEye = visible.innerHTML === eye;
             visible.innerHTML = isEye ? uneye : eye;
+            // 年度运行情况
+            if (this.feature.properties.id.includes("运行情况")) {
+                // 单击轨迹显示/隐藏按钮时，根据轨迹图层状态，调用 .NET 接口初始化
+                let annualReportLayerGroup = this.map.getLayerGroup(this.feature.properties.layerId);
+                if (!annualReportLayerGroup)
+                    annualReportLayerGroup = this.map.addLayerGroup(this.feature.properties.layerId);
 
-            if (this.feature.properties.id.includes("-group")) {
+                let trackLayer = `${this.feature.properties.layerId}-${this.feature.properties.name}-track-layer`;
+                if (annualReportLayerGroup.layerIds.indexOf(trackLayer) < 0) {
+                    await new Promise(async (resolve) => {
+                        // 船舶 mmsi
+                        if (this.feature.properties.description != "-")
+                            // 根据船舶 mmsi 获取船舶航行轨迹
+                            await dotNetHelper.invokeMethodAsync("FetchAnnualReport", this.feature.properties.description, this.feature.properties.id.substring(0, 4), undefined);
+                        else {
+                            // 根据潜器名称获取潜次下潜位置分布
+                            await dotNetHelper.invokeMethodAsync("ShowToast", "年度潜次分布",`请添加${this.feature.properties.id.substring(0, 4)}年下潜数据`,"Warning");
+                        }
+                    }).then(() => {
+                        this.map.setLayoutProperty(trackLayer, "visibility", isEye ? "none" : "visible");
+                    });
+                }
+                else {
+                    this.map.setLayoutProperty(trackLayer, "visibility", isEye ? "none" : "visible");
+                    this.map.setLayoutProperty(`${trackLayer}-arrow`, "visibility", isEye ? "none" : "visible");
+                }
+            }
+            else if (this.feature.properties.id.includes("-group")) {
                 let layers = this.map.getLayerGroup(this.feature.properties.layerId);
                 if (layers)
                     layers?.layerIds!.forEach(id => {
