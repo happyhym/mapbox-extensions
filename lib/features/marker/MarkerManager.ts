@@ -113,7 +113,7 @@ export default class MarkerManager {
             id: creator.uuid(),
             // oe: 不使用上次的标注
             name: "",//lang.newMarkerName,
-            layerId: options.layers[0].id,
+            layerId: options?.layers[0].id,
             date: Date.now() - 1704038400000,
             style: {
                 textSize: 12,
@@ -247,7 +247,7 @@ export default class MarkerManager {
 
         // 图层通过时间排序、创建图层、图层初始设置不可见
         const values = array.groupBy(options.featureCollection.features, f => f.properties.layerId);
-        options.layers.sort(x => x.date).forEach(l => {
+        options?.layers?.sort(x => x.date).forEach(l => {
             const features = values.get(l.id) || [];
             this.markerLayers.push(new MarkerLayer(this, map, l, features, options.layerOptions));
         });
@@ -739,12 +739,37 @@ class MarkerLayer extends AbstractLinkP<MarkerManager> {
 
         const suffix = dom.createHtmlElement('div', ['jas-ctrl-marker-suffix', 'jas-ctrl-hidden']);
 
+        // 判断用户是否包含在图层（非用户自己创建的图层）的 acl 列表中
+        if (this.properties.acl && userName in this.properties.acl) {
+            let acl = this.properties.acl[userName];
+            // 仅具有浏览权限
+            if (acl == 1) {
+                readonlyLayers.push(this.properties.name);
+            }
+            // 具有导出权限
+            if ((acl & 2) == 2) {
+                suffix.append(this.createSuffixExport());
+            }
+            // 具有编辑权限
+            if ((acl & 4) == 4) {
+                suffix.append(this.createSuffixEdit(), this.createSuffixImport());
+            }
+            // 具有删除权限
+            if ((acl & 8) == 8) {
+                suffix.append(this.createSuffixDel());
+            }
+            // 设置共享图层外观
+            header.title=`所有者：${this.properties.user}`;
+            header.style.fontStyle="italic";
+        }
         // oe: 用于控制以 this.properties.name 命名的图层，这样该图层可不设置 markerOptions.featureCollection.features
         // let nameLayer = this.map.getLayer(this.properties.name);
         // 基础图层（专属经济区、海山、海岸线、船舶位置、船舶轨迹）禁用编辑/导入/导出/删除按钮
         // if (!nameLayer && this.properties.name != "Undersea Feature Gazetteer" && this.properties.name != "船舶位置") {
-        if (!readonlyLayers.includes(this.properties.name)) {
+        // 其他普通情况
+        else if (!readonlyLayers.includes(this.properties.name) && !this.properties.readonly) {
             suffix.append(
+                this.createSuffixAcl(),
                 this.createSuffixEdit(),
                 this.createSuffixImport(),
                 this.createSuffixExport(),
@@ -888,6 +913,16 @@ class MarkerLayer extends AbstractLinkP<MarkerManager> {
         });
 
         return imp;
+    }
+
+    private createSuffixAcl() {
+        const acl = dom.createHtmlElement('div', ["jas-ctrl-marker-suffix-item"]);
+        acl.innerHTML = new SvgBuilder('share').resize(18, 18).create();
+        acl.title = lang.acl;
+        acl.addEventListener('click', () => {
+            dotNetHelper.invokeMethodAsync("ToggleACLModal", this.properties.id, this.properties.name);
+        });
+        return acl;
     }
 
     private createSuffixEdit() {
@@ -1389,16 +1424,34 @@ class MarkerItem extends AbstractLinkP<MarkerLayer> {
 
         if (options.editGeometry) element.append(this.createSuffixEditGeometry());
 
-        if (this.feature.properties.id.endsWith("-readonly")) {
-            element.append(
-                this.createSuffixVisible()
-            );
+        // 判断用户是否包含在图层（非用户自己创建的图层）的 acl 列表中
+        if (this.parent.properties.acl && userName in this.parent.properties.acl) {
+            let acl = this.parent.properties.acl[userName];
+            // 仅具有浏览权限
+            if (acl == 1) {
+                readonlyLayers.push(this.parent.properties.name);
+            }
+            // 具有导出权限
+            if ((acl & 2) == 2) {
+                element.append(this.createSuffixExport());
+            }
+            // 具有编辑权限
+            if ((acl & 4) == 4) {
+                element.append(this.createSuffixEdit());
+            }
+            // 具有删除权限
+            if ((acl & 8) == 8) {
+                element.append(this.createSuffixDel());
+            }
+        }
+        else if (this.feature.properties.id.endsWith("-readonly")) {
+            element.append(this.createSuffixVisible());
         }
         else
             element.append(
                 this.createSuffixEdit(),
                 this.createSuffixExport(),
-                this.createSuffixDel(),
+                this.createSuffixDel()
             );
 
         return element;
@@ -1573,7 +1626,7 @@ class MarkerItem extends AbstractLinkP<MarkerLayer> {
                             await dotNetHelper.invokeMethodAsync("FetchAnnualReport", this.feature.properties.description, this.feature.properties.id.substring(0, 4), undefined);
                         else {
                             // 根据潜器名称获取潜次下潜位置分布
-                            await dotNetHelper.invokeMethodAsync("ShowToast", "年度潜次分布",`请添加${this.feature.properties.id.substring(0, 4)}年下潜数据`,"Warning");
+                            await dotNetHelper.invokeMethodAsync("ShowToast", "年度潜次分布", `请添加${this.feature.properties.id.substring(0, 4)}年下潜数据`, "Warning");
                         }
                     }).then(() => {
                         this.map.setLayoutProperty(trackLayer, "visibility", isEye ? "none" : "visible");

@@ -51,7 +51,10 @@ export interface MarkerLayerProperties {
     name: string,
     date: number,
     // oe: 默认的显隐状态
-    show?: boolean
+    show?: boolean,
+    readonly?: boolean,
+    acl?: any,
+    user?: string
 }
 
 export type MarkerFeatureType = GeoJSON.Feature<GeoJSON.Geometry, MarkerFeatrueProperties>;
