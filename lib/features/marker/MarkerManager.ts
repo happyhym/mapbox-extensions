@@ -479,6 +479,7 @@ abstract class AbstractLinkP<P> {
 class MarkerLayer extends AbstractLinkP<MarkerManager> {
     readonly items: MarkerItem[];
     readonly htmlElement = dom.createHtmlElement('div');
+    public header: any;
 
     private layerGroup: LayerGroup;
     private arrow = dom.createHtmlElement('div', ["jas-collapse-arrow", "jas-ctrl-switchlayer-group-header-title-collapse"]);
@@ -727,7 +728,7 @@ class MarkerLayer extends AbstractLinkP<MarkerManager> {
     }
 
     private createHeader() {
-        const header = dom.createHtmlElement('div', ['jas-ctrl-marker-layer-header']);
+        this.header = dom.createHtmlElement('div', ['jas-ctrl-marker-layer-header']);
 
         const content = dom.createHtmlElement('div', ['jas-ctrl-marker-layer-header-content']);
         content.append(this.arrow, this.nameElement);
@@ -741,7 +742,10 @@ class MarkerLayer extends AbstractLinkP<MarkerManager> {
 
         // 判断用户是否包含在图层（非用户自己创建的图层）的 acl 列表中
         if (this.properties.acl && userName in this.properties.acl) {
-            let acl = this.properties.acl[userName];
+            // 权限值
+            let acl = this.properties.acl[userName][0];
+            // 到期日期
+            // let expirationDate = this.properties.acl[userName][1];
             // 仅具有浏览权限
             if (acl == 1) {
                 readonlyLayers.push(this.properties.name);
@@ -759,8 +763,11 @@ class MarkerLayer extends AbstractLinkP<MarkerManager> {
                 suffix.append(this.createSuffixDel());
             }
             // 设置共享图层外观
-            header.title=`所有者：${this.properties.user}`;
-            header.style.fontStyle="italic";
+            this.header.title = `所有者：${this.properties.user}`;
+            // 其他用户共享的，斜体
+            // this.header.style.fontStyle = "italic";
+            this.header.style.color = "green";
+            // header.style.opacity = "0.5";
         }
         // oe: 用于控制以 this.properties.name 命名的图层，这样该图层可不设置 markerOptions.featureCollection.features
         // let nameLayer = this.map.getLayer(this.properties.name);
@@ -774,23 +781,28 @@ class MarkerLayer extends AbstractLinkP<MarkerManager> {
                 this.createSuffixImport(),
                 this.createSuffixExport(),
                 this.createSuffixDel());
+            // 共享给其他用户了，红色
+            if (this.properties.acl && Object.keys(this.properties.acl).length > 0)
+                this.header.style.color = "red";
+            // header.style.fontWeight = "bold";
+            // header.style.textDecoration = "underline";
         }
 
-        header.addEventListener('mouseenter', () => {
+        this.header.addEventListener('mouseenter', () => {
             suffix.classList.remove('jas-ctrl-hidden');
         });
-        header.addEventListener('mouseleave', () => {
+        this.header.addEventListener('mouseleave', () => {
             suffix.classList.add('jas-ctrl-hidden');
         });
 
         if (this.properties.name.includes("探索") || this.properties.name.endsWith("船") || this.properties.name.endsWith("Fleet"))
-            header.append(content, suffix, this.createShipLocationVisible(), this.createShipTrackVisible());
+            this.header.append(content, suffix, this.createShipLocationVisible(), this.createShipTrackVisible());
         else if (userName == "idsse" && (this.properties.name.endsWith("深海勇士") || this.properties.name.endsWith("奋斗者")))
             // else if ((this.properties.name.endsWith("深海勇士") || this.properties.name.endsWith("奋斗者")))
-            header.append(content, suffix, this.createSuffixUpload(), this.createSuffixVisible());
+        this.header.append(content, suffix, this.createSuffixUpload(), this.createSuffixVisible());
         else
-            header.append(content, suffix, this.createSuffixVisible());
-        return header;
+        this.header.append(content, suffix, this.createSuffixVisible());
+        return this.header;
     }
 
     private createSuffixExport() {
@@ -916,13 +928,17 @@ class MarkerLayer extends AbstractLinkP<MarkerManager> {
     }
 
     private createSuffixAcl() {
-        const acl = dom.createHtmlElement('div', ["jas-ctrl-marker-suffix-item"]);
-        acl.innerHTML = new SvgBuilder('share').resize(18, 18).create();
-        acl.title = lang.acl;
-        acl.addEventListener('click', () => {
+        this.properties.acl && Object.keys(this.properties.acl).length > 0
+        {
+
+        }
+        const aclBtn = dom.createHtmlElement('div', ["jas-ctrl-marker-suffix-item"]);
+        aclBtn.innerHTML = new SvgBuilder('share').resize(18, 18).create();
+        aclBtn.title = lang.acl;
+        aclBtn.addEventListener('click', () => {
             dotNetHelper.invokeMethodAsync("ToggleACLModal", this.properties.id, this.properties.name);
         });
-        return acl;
+        return aclBtn;
     }
 
     private createSuffixEdit() {
@@ -1024,6 +1040,12 @@ class MarkerLayer extends AbstractLinkP<MarkerManager> {
                 }
                 );
             }
+            // 点击了图层分组显/隐图标，则遍历每个图形，同步设置图形的显/隐状态
+            this.items.forEach(async (item: any) => {
+                item.visible.innerHTML = this.layerGroup.show ? item.eye : item.uneye;
+                item.feature.properties.style.visibility = this.layerGroup.show ? "visible" : "none";
+            });
+
             // // 年度运行情况
             // if(this.properties.name.includes("运行情况")){
             //     alert(this.properties.name);
@@ -1426,7 +1448,10 @@ class MarkerItem extends AbstractLinkP<MarkerLayer> {
 
         // 判断用户是否包含在图层（非用户自己创建的图层）的 acl 列表中
         if (this.parent.properties.acl && userName in this.parent.properties.acl) {
-            let acl = this.parent.properties.acl[userName];
+            // 权限值
+            let acl = this.parent.properties.acl[userName][0];
+            // 到期日期
+            // let expirationDate = this.parent.properties.acl[userName][1];
             // 仅具有浏览权限
             if (acl == 1) {
                 readonlyLayers.push(this.parent.properties.name);
@@ -1600,16 +1625,17 @@ class MarkerItem extends AbstractLinkP<MarkerLayer> {
         const eye = svgBuilder.create();
         const uneye = svgBuilder.change('uneye').create();
 
-        const visible = dom.createHtmlElement('div', ["jas-ctrl-marker-suffix-item"]);
+        this.visible = dom.createHtmlElement('div', ["jas-ctrl-marker-suffix-item"]);
 
         this.feature.properties.style.visibility ??= "visible";
-        visible.innerHTML = this.feature.properties.style.visibility == "visible" ? eye : uneye;
-        visible.id = this.feature.properties.name;
+        this.visible.innerHTML = this.feature.properties.style.visibility == "visible" ? eye : uneye;
+        this.visible.id = this.feature.properties.name;
         uneyed = uneye;
 
-        visible.addEventListener('click', async () => {
-            const isEye = visible.innerHTML === eye;
-            visible.innerHTML = isEye ? uneye : eye;
+        this.visible.addEventListener('click', async () => {
+            const isEye = this.visible.innerHTML === eye;
+            this.visible.innerHTML = isEye ? uneye : eye;
+            this.feature.properties.style.visibility = isEye ? "none" : "visible";
             // 年度运行情况
             if (this.feature.properties.id.includes("运行情况")) {
                 // 单击轨迹显示/隐藏按钮时，根据轨迹图层状态，调用 .NET 接口初始化
@@ -1644,7 +1670,6 @@ class MarkerItem extends AbstractLinkP<MarkerLayer> {
                         if (id.startsWith(`${this.feature.properties.name}-group`))
                             this.map.setLayoutProperty(id, "visibility", isEye ? "none" : "visible")
                     });
-
             }
             else {
                 // oe: 更新 woa 图层的显隐（互斥）
@@ -1657,10 +1682,10 @@ class MarkerItem extends AbstractLinkP<MarkerLayer> {
             }
         });
 
-        visible.style.cursor = "pointer";
-        visible.style.marginLeft = "5px";
-        visible.title = lang.visibility;
-        return visible;
+        this.visible.style.cursor = "pointer";
+        this.visible.style.marginLeft = "5px";
+        this.visible.title = lang.visibility;
+        return this.visible;
     }
 
     private createShipLocationVisible() {
