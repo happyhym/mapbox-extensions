@@ -15,6 +15,7 @@ const { SvgBuilder } = svg;
 
 // oe: 使用 declare 关键字声明要在 Typescript 中调用已在 Javascript 中定义的全局变量或函数
 declare const dotNetHelper: any;
+declare const fetchFeature: any;
 declare const undo: any;
 declare const redo: any;
 declare const saveLayer: any;
@@ -480,6 +481,7 @@ class MarkerLayer extends AbstractLinkP<MarkerManager> {
     readonly items: MarkerItem[];
     readonly htmlElement = dom.createHtmlElement('div');
     public header: any;
+    private visible: any;
 
     private layerGroup: LayerGroup;
     private arrow = dom.createHtmlElement('div', ["jas-collapse-arrow", "jas-ctrl-switchlayer-group-header-title-collapse"]);
@@ -512,7 +514,7 @@ class MarkerLayer extends AbstractLinkP<MarkerManager> {
         this.items = layerFeatures.map(f => new MarkerItem(this, map, f, options.markerItemOptions));
 
         // 图层默认显示
-        this.properties.show ??= true;
+        this.properties.visibility ??= "visible";
 
         map.addSource(this.properties.id, {
             type: 'geojson',
@@ -528,7 +530,7 @@ class MarkerLayer extends AbstractLinkP<MarkerManager> {
                 type: 'symbol',
                 source: this.properties.id,
                 layout: {
-                    visibility: this.properties.show ? "visible" : "none",
+                    visibility: this.properties.visibility,
                     "text-field": ['get', 'name'],
                     'text-size': ['get', 'textSize', ['get', 'style']],
                     'icon-image': ['get', 'pointIcon', ['get', 'style']],
@@ -554,7 +556,7 @@ class MarkerLayer extends AbstractLinkP<MarkerManager> {
                 type: 'line',
                 source: this.properties.id,
                 layout: {
-                    visibility: this.properties.show ? "visible" : "none",
+                    visibility: this.properties.visibility
                 },
                 paint: {
                     "line-color": ['get', 'lineColor', ['get', 'style']],
@@ -566,7 +568,7 @@ class MarkerLayer extends AbstractLinkP<MarkerManager> {
                 type: 'fill',
                 source: this.properties.id,
                 layout: {
-                    visibility: this.properties.show ? "visible" : "none",
+                    visibility: this.properties.visibility
                 },
                 paint: {
                     "fill-color": ['get', 'polygonColor', ['get', 'style']],
@@ -578,7 +580,7 @@ class MarkerLayer extends AbstractLinkP<MarkerManager> {
                 type: 'line',
                 source: this.properties.id,
                 layout: {
-                    visibility: this.properties.show ? "visible" : "none",
+                    visibility: this.properties.visibility
                 },
                 paint: {
                     "line-color": ['get', 'polygonOutlineColor', ['get', 'style']],
@@ -590,7 +592,7 @@ class MarkerLayer extends AbstractLinkP<MarkerManager> {
                 type: 'symbol',
                 source: this.properties.id,
                 layout: {
-                    visibility: this.properties.show ? "visible" : "none",
+                    visibility: this.properties.visibility,
                     "text-field": ['get', 'name'],
                     'text-size': ['get', 'textSize', ['get', 'style']]
                 },
@@ -727,6 +729,25 @@ class MarkerLayer extends AbstractLinkP<MarkerManager> {
         this.map.removeLayerGroup(this.layerGroup.id);
     }
 
+    private async fetchLayer() {
+        // 加载延迟加载的图形要素
+        await new Promise(async (resolve) => {
+            this.properties.isLoaded = true;
+            this.properties.visibility = "visible";
+            // 调用服务器端加载图形要素
+            console.log(`fetch layer: ${this.properties.name}，${this.properties.id} ...`)
+            await dotNetHelper.invokeMethodAsync("FetchLayer", this.properties.id, this.properties.name);
+            // 加载后显示图形，同时将图形显/隐按钮同步设置为打开
+            // this.visible?.click();
+        }).then(() => {
+            // this.visible?.click();
+            // this.map.easeTo({
+            //     center: centerPoint,
+            //     'offset': offset
+            // });
+        });
+    }
+
     private createHeader() {
         this.header = dom.createHtmlElement('div', ['jas-ctrl-marker-layer-header']);
 
@@ -734,8 +755,12 @@ class MarkerLayer extends AbstractLinkP<MarkerManager> {
         content.append(this.arrow, this.nameElement);
 
         content.addEventListener('click', () => {
+            // console.log(this);
             this.arrow.classList.toggle("jas-collapse-active");
             this.itemContainerElement.classList.toggle("jas-ctrl-hidden");
+            // 图层是否已加载
+            if ("isLoaded" in this.properties && !this.properties?.isLoaded)
+                this.fetchLayer();
         });
 
         const suffix = dom.createHtmlElement('div', ['jas-ctrl-marker-suffix', 'jas-ctrl-hidden']);
@@ -795,13 +820,13 @@ class MarkerLayer extends AbstractLinkP<MarkerManager> {
             suffix.classList.add('jas-ctrl-hidden');
         });
 
-        if (this.properties.name.includes("探索") || this.properties.name.endsWith("船") || this.properties.name.endsWith("Fleet"))
+        if (this.properties.name.includes("探索") || this.properties.name.includes("广海局") || this.properties.name.endsWith("船") || this.properties.name.endsWith("Fleet"))
             this.header.append(content, suffix, this.createShipLocationVisible(), this.createShipTrackVisible());
         else if (userName == "idsse" && (this.properties.name.endsWith("深海勇士") || this.properties.name.endsWith("奋斗者")))
             // else if ((this.properties.name.endsWith("深海勇士") || this.properties.name.endsWith("奋斗者")))
-        this.header.append(content, suffix, this.createSuffixUpload(), this.createSuffixVisible());
+            this.header.append(content, suffix, this.createSuffixUpload(), this.createSuffixVisible());
         else
-        this.header.append(content, suffix, this.createSuffixVisible());
+            this.header.append(content, suffix, this.createSuffixVisible());
         return this.header;
     }
 
@@ -993,7 +1018,7 @@ class MarkerLayer extends AbstractLinkP<MarkerManager> {
     }
 
     private createSuffixVisible() {
-        const visible = dom.createHtmlElement('div', ["jas-ctrl-marker-suffix-item"]);
+        this.visible = dom.createHtmlElement('div', ["jas-ctrl-marker-suffix-item"]);
         this.setGeometryVisible = (value: boolean) => {
             // oe: 对于基础图层（海岸线、专属经济区）已通过设置 show 属性来控制图层的显隐
             // visible.innerHTML = value ? eye : uneye;
@@ -1012,37 +1037,52 @@ class MarkerLayer extends AbstractLinkP<MarkerManager> {
 
         // 世界海洋数据图集，不能同时显示多个海洋要素图层，因此不需要显示/隐藏按钮，直接返回
         if (markerItemsViewSingle.includes(this.properties.name))
-            return visible;
+            return this.visible;
 
         const svgBuilder = new SvgBuilder('eye').resize(18, 18);
         const eye = svgBuilder.create();
         const uneye = svgBuilder.change('uneye').create();
 
         // oe: 对于基础图层（海岸线、专属经济区）通过设置 show 属性来控制图层的显隐
-        visible.innerHTML = this.properties.show ? eye : uneye;
+        this.visible.innerHTML = this.properties.visibility == "visible" ? eye : uneye;
 
-        visible.addEventListener('click', () => {
-            const isEye = visible.innerHTML === eye;
-            visible.innerHTML = isEye ? uneye : eye;
+        this.visible.addEventListener('click', async () => {
+            const isEye = this.visible.innerHTML === eye;
+            this.visible.innerHTML = isEye ? uneye : eye;
             this.layerGroup.show = !isEye;
             // 更新图层显示状态用于持久化存储
-            this.properties.show = this.layerGroup.show;
+            this.properties.visibility = this.layerGroup.show ? "visible" : "none";
             // oe: 用于控制以 this.properties.name 为 id 的图层，即基础图层（海岸线、专属经济区），这样该图层可不设置 markerOptions.featureCollection.features，显隐功能直接应用于图层
             if (readonlyLayers.includes(this.properties.name) && this.map.getLayer(this.properties.name))
                 this.map.setLayoutProperty(this.properties.name, "visibility", this.layerGroup.show ? "visible" : "none");
+
+            if (this.properties.name == "地球板块和洋壳数据") {
+                this.items.forEach(async (item: any) => {
+                    // 图形是否已加载
+                    if (!item.feature.properties?.isLoaded) {
+                        item.feature.properties.isLoaded = true;
+                        item.feature.properties.visibility = "visible";
+                        fetchFeature(item.feature.properties?.layerId, item.feature.properties?.layer);
+                        console.log(`正在加载图形：${item.feature.properties.name} ...`);
+                    }
+                });
+            }
+            // 图层是否已加载
+            else if (!this.properties?.isLoaded)
+                this.fetchLayer();
 
             // oe: 用于控制以 this.properties.name 为 id 的图层组（Undersea Feature Gazetteer、文物保护区等）
             let layers = this.map.getLayerGroup(this.properties.name);
             if (layers) {
                 layers?.layerIds!.forEach(id => {
-                    // alert(id);
                     this.map.setLayoutProperty(id, "visibility", this.layerGroup.show ? "visible" : "none");
                 }
                 );
             }
             // 点击了图层分组显/隐图标，则遍历每个图形，同步设置图形的显/隐状态
             this.items.forEach(async (item: any) => {
-                item.visible.innerHTML = this.layerGroup.show ? item.eye : item.uneye;
+                if (item.visible)
+                    item.visible.innerHTML = this.layerGroup.show ? item.eye : item.uneye;
                 item.feature.properties.style.visibility = this.layerGroup.show ? "visible" : "none";
             });
 
@@ -1063,10 +1103,10 @@ class MarkerLayer extends AbstractLinkP<MarkerManager> {
             // }
         });
 
-        visible.style.cursor = "pointer";
-        visible.style.marginLeft = "5px";
-        visible.title = lang.visibility;
-        return visible;
+        this.visible.style.cursor = "pointer";
+        this.visible.style.marginLeft = "5px";
+        this.visible.title = lang.visibility;
+        return this.visible;
     }
 
     private createShipLocationVisible() {
@@ -1083,7 +1123,7 @@ class MarkerLayer extends AbstractLinkP<MarkerManager> {
         const visible = dom.createHtmlElement('div', ["jas-ctrl-marker-suffix-item"]);
 
         // oe: 对于基础图层（海岸线、专属经济区）通过设置 show 属性来控制图层的显隐
-        visible.innerHTML = this.properties.show ? eye : uneye;
+        visible.innerHTML = this.properties.visibility == "visible" ? eye : uneye;
 
         visible.addEventListener('click', () => {
             const isEye = visible.innerHTML === eye;
@@ -1092,7 +1132,7 @@ class MarkerLayer extends AbstractLinkP<MarkerManager> {
 
             // 遍历每条船，将其显示/隐藏按钮置为当前状态（有 bug，功能还未完全实现）
             // this.items.forEach(item => {
-            //     item.suffix.innerHTML = `<div class="jas-ctrl-marker-suffix-item" title="轨迹回放" style="cursor: pointer; margin-left: 5px;"><img
+            //     item.suffix.innerHTML = `< div class="jas-ctrl-marker-suffix-item" title = "轨迹回放" style = "cursor: pointer; margin-left: 5px;" > <img
             // src="_content/IDSSE.OceanExplorer.Shared/images/svg/play.svg" style="width:18px;height:18px;"></div>${visible.innerHTML}${visible.innerHTML}`;
             // });
 
@@ -1175,7 +1215,7 @@ class MarkerLayer extends AbstractLinkP<MarkerManager> {
         const visible = dom.createHtmlElement('div', ["jas-ctrl-marker-suffix-item"]);
 
         // oe: 对于基础图层（海岸线、专属经济区）通过设置 show 属性来控制图层的显隐
-        visible.innerHTML = this.properties.show ? eye : uneye;
+        visible.innerHTML = this.properties.visibility == "visible" ? eye : uneye;
 
         visible.addEventListener('click', () => {
             const isEye = visible.innerHTML === eye;
@@ -1336,6 +1376,21 @@ class MarkerItem extends AbstractLinkP<MarkerLayer> {
                             // 加载非探索系列船舶的船位和轨迹
                             await dotNetHelper.invokeMethodAsync("FetchShipLocation", mmsi, -180, 180, -90, 90, undefined);
                             // 加载后显示船位，同时将船位显/隐按钮同步设置为打开
+                            this.visible?.click();
+                        }).then(() => {
+                            this.map.easeTo({
+                                center: centerPoint,
+                                'offset': offset
+                            });
+                        });
+                    }
+                    // 非船舶要素，通过调用 .NET 接口获取图形数据并显示
+                    else {
+                        // alert(`1: feature.properties.name: ${feature.properties.name}`);
+                        await new Promise(async (resolve) => {
+                            // 加载非船舶图形要素
+                            await dotNetHelper.invokeMethodAsync("FetchLayer", feature.properties.id, feature.properties.name);
+                            // 加载后显示图形，同时将图形显/隐按钮同步设置为打开
                             this.visible?.click();
                         }).then(() => {
                             this.map.easeTo({
@@ -1620,6 +1675,25 @@ class MarkerItem extends AbstractLinkP<MarkerLayer> {
         return div;
     }
 
+    // private async fetchFeature() {
+    //     // 加载延迟加载的图形要素
+    //     await new Promise(async (resolve) => {
+    //         this.properties.isLoaded = true;
+    //         this.properties.visibility = "visible";
+    //         // 调用服务器端加载图形要素
+    //         console.log(`fetch layer by name: ${this.properties.name} ...`)
+    //         await dotNetHelper.invokeMethodAsync("FetchLayer",this.properties.id, this.properties.name);
+    //         // 加载后显示图形，同时将图形显/隐按钮同步设置为打开
+    //         // this.visible?.click();
+    //     }).then(() => {
+    //         // this.visible?.click();
+    //         // this.map.easeTo({
+    //         //     center: centerPoint,
+    //         //     'offset': offset
+    //         // });
+    //     });
+    // }
+
     private createSuffixVisible() {
         const svgBuilder = new SvgBuilder('eye').resize(18, 18);
         const eye = svgBuilder.create();
@@ -1633,6 +1707,14 @@ class MarkerItem extends AbstractLinkP<MarkerLayer> {
         uneyed = uneye;
 
         this.visible.addEventListener('click', async () => {
+            // 图形是否已加载
+            if (!this.feature.properties?.isLoaded) {
+                this.feature.properties.isLoaded = true;
+                this.feature.properties.visibility = "visible";
+                fetchFeature(this.feature.properties?.layerId, this.feature.properties?.layer);
+                console.log(`正在加载图形：${this.feature.properties.name} ...`);
+            }
+
             const isEye = this.visible.innerHTML === eye;
             this.visible.innerHTML = isEye ? uneye : eye;
             this.feature.properties.style.visibility = isEye ? "none" : "visible";
@@ -1667,9 +1749,10 @@ class MarkerItem extends AbstractLinkP<MarkerLayer> {
                 let layers = this.map.getLayerGroup(this.feature.properties.layerId);
                 if (layers)
                     layers?.layerIds!.forEach(id => {
-                        if (id.startsWith(`${this.feature.properties.name}-group`))
+                        if (id.includes(`${this.feature.properties.name}-group`))
                             this.map.setLayoutProperty(id, "visibility", isEye ? "none" : "visible")
                     });
+                this.map.setLayoutProperty(`${this.feature.properties.name}`, "visibility", isEye ? "none" : "visible");
             }
             else {
                 // oe: 更新 woa 图层的显隐（互斥）
@@ -1691,11 +1774,11 @@ class MarkerItem extends AbstractLinkP<MarkerLayer> {
     private createShipLocationVisible() {
         this.locationVisible = dom.createHtmlElement('div', ["jas-ctrl-marker-suffix-item"]);
 
-        this.locationVisible.innerHTML = this.feature.properties.show ? this.eye : this.uneye;
+        this.locationVisible.innerHTML = this.feature.properties.visibility == "visible" ? this.eye : this.uneye;
         this.locationVisible.addEventListener('click', async () => {
             const isEye = this.locationVisible.innerHTML === this.eye;
             this.locationVisible.innerHTML = isEye ? this.uneye : this.eye;
-            this.feature.properties.show = !isEye;
+            this.feature.properties.visibility = isEye ? "none" : "visible";
 
             // 单击船位显示/隐藏按钮时，根据船位和船舶图层状态，调用 .NET 接口初始化
             let shipLocationLayerGroup = this.map.getLayerGroup(this.feature.properties.layerId);
@@ -1709,13 +1792,13 @@ class MarkerItem extends AbstractLinkP<MarkerLayer> {
                     // console.log(`init ship location layer for ${this.feature.properties.description} ...`);
                     await dotNetHelper.invokeMethodAsync("FetchShipLocation", this.feature.properties.description, -180, 180, -90, 90, undefined);
                 }).then(() => {
-                    this.map.setLayoutProperty(`${this.feature.properties.name}-location-layer`, "visibility", this.feature.properties.show ? "visible" : "none");
-                    this.map.setLayoutProperty(`${this.feature.properties.name}-status-layer`, "visibility", this.feature.properties.show ? "visible" : "none");
+                    this.map.setLayoutProperty(`${this.feature.properties.name}-location-layer`, "visibility", this.feature.properties.visibility);
+                    this.map.setLayoutProperty(`${this.feature.properties.name}-status-layer`, "visibility", this.feature.properties.visibility);
                 });
             }
             else {
-                this.map.setLayoutProperty(`${this.feature.properties.name}-location-layer`, "visibility", this.feature.properties.show ? "visible" : "none");
-                this.map.setLayoutProperty(`${this.feature.properties.name}-status-layer`, "visibility", this.feature.properties.show ? "visible" : "none");
+                this.map.setLayoutProperty(`${this.feature.properties.name}-location-layer`, "visibility", this.feature.properties.visibility);
+                this.map.setLayoutProperty(`${this.feature.properties.name}-status-layer`, "visibility", this.feature.properties.visibility);
             }
         });
 
@@ -1727,11 +1810,11 @@ class MarkerItem extends AbstractLinkP<MarkerLayer> {
 
     private createShipTrackVisible() {
         this.trackVisible = dom.createHtmlElement('div', ["jas-ctrl-marker-suffix-item"]);
-        this.trackVisible.innerHTML = this.feature.properties.show ? this.eye : this.uneye;
+        this.trackVisible.innerHTML = this.feature.properties.visibility == "visible" ? this.eye : this.uneye;
         this.trackVisible.addEventListener('click', async () => {
             const isEye = this.trackVisible.innerHTML === this.eye;
             this.trackVisible.innerHTML = isEye ? this.uneye : this.eye;
-            this.feature.properties.show = !isEye;
+            this.feature.properties.visibility = isEye ? "none" : "visible";
 
             // 单击轨迹显示/隐藏按钮时，根据轨迹图层状态，调用 .NET 接口初始化
             let shipTrackLayerGroup = this.map.getLayerGroup(this.feature.properties.layerId);
@@ -1743,11 +1826,11 @@ class MarkerItem extends AbstractLinkP<MarkerLayer> {
                     // console.log(`init ship track layer for ${this.feature.properties.description} ...`);
                     await dotNetHelper.invokeMethodAsync("FetchShipTrack", this.feature.properties.description, -180, 180, -90, 90, 15, 1000, 10, undefined);
                 }).then(() => {
-                    this.map.setLayoutProperty(`${this.feature.properties.name}-track-layer`, "visibility", this.feature.properties.show ? "visible" : "none");
+                    this.map.setLayoutProperty(`${this.feature.properties.name}-track-layer`, "visibility", this.feature.properties.visibility);
                 });
             }
             else
-                this.map.setLayoutProperty(`${this.feature.properties.name}-track-layer`, "visibility", this.feature.properties.show ? "visible" : "none");
+                this.map.setLayoutProperty(`${this.feature.properties.name}-track-layer`, "visibility", this.feature.properties.visibility);
         });
 
         this.trackVisible.style.cursor = "pointer";

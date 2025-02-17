@@ -27,7 +27,11 @@ export interface MarkerFeatrueProperties {
     description?: string;
     date: number,
     style: GeometryStyle,
-    show?: boolean;
+    visibility?: "visible" | "none";
+    // 指示图形是否加载/延迟加载
+    isLoaded?: boolean,
+    // 保存从数据库返回的图形信息，用于延迟加载
+    layer?: any,
     // oe: 以回车换行为分隔符的坐标列表
     // lon1,lat1
     // lon2,lat2
@@ -51,10 +55,11 @@ export interface MarkerLayerProperties {
     name: string,
     date: number,
     // oe: 默认的显隐状态
-    show?: boolean,
+    visibility?: "visible" | "none",
     readonly?: boolean,
     acl?: any,
-    user?: string
+    user?: string,
+    isLoaded?: boolean
 }
 
 export type MarkerFeatureType = GeoJSON.Feature<GeoJSON.Geometry, MarkerFeatrueProperties>;
