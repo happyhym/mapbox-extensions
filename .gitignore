@@ -1,3 +1,10 @@
 node_modules
 dist
 .DS_Store
+example/map.ts
+example/map.ts
+.gitignore
+lib/features/Measure/mobile/MeasureLineString.ts
+lib/features/marker/Modal - 副本.ts
+lib/features/marker/DrawMarker - 副本.ts
+lib/features/marker/DrawMarker - 副本 (2).ts
