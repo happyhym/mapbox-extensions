@@ -23,11 +23,14 @@ export abstract class AbstractExtendControl implements mapboxgl.IControl {
     readonly mobileContainer: HTMLDivElement = dom.createHtmlElement('div', ["jas-ctrl-extend-mobile-contianer"]);
     readonly emitter = mitt<{ "openChange": boolean }>();
 
-    protected readonly minWidth = 300;
+    // oe: 避免面板溢出容器
+    protected readonly minWidth = 100;//300;
     private _open: boolean = false;
 
     constructor(private options: Omit<ExtendControlOptions, "content">) {
         this.options.position ??= "top-right";
+        // oe: 避免面板溢出容器
+        this.options.mustBe ??= "pc";
         const svg_extend_left = new svg.SvgBuilder('extend_left').create();
         const svg_extend_right = new svg.SvgBuilder('extend_right').create();
 
