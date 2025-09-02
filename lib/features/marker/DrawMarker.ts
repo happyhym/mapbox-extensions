@@ -54,9 +54,23 @@ abstract class DrawBase<T extends GeoJSON.Geometry> {
     start(properties: MarkerFeatrueProperties) {
         this.end();
 
+        // 将新建的图形放在 idsse_data_2024 图层之上，以解决绘图过程中图形被 idsse_data_2024 遮挡的问题
+        // let idsse_data_2024 = "idsse_data_2024";
+        // if (this.map.getLayer(idsse_data_2024))
+        // this.map.moveLayer(idsse_data_2024, this.id);
+
+        // 将新建的图形放在所有 raster 图层之上，以解决绘图过程中图形被 raster 遮挡的问题
+        const layers = this.map.getStyle().layers;
+        layers?.forEach(layer => {
+            if (layer?.type === "raster")
+                this.map.moveLayer(layer?.id, this.id);
+        });
+
         // oe: 重置 centre 和 radius，确保画圆后不影响再画其他要素时的逻辑判断
         properties.centre = undefined;
         properties.radius = undefined;
+        properties.isRectangle = false;
+        properties.isCircle = false;
 
         this.map.doubleClickZoom.disable();
         this.map.getCanvas().style.cursor = 'crosshair';
@@ -501,6 +515,7 @@ class DrawRectangle extends DrawBase<GeoJSON.Polygon> {
 
             // 动态画矩形
             moveCoords = coord;
+            this.currentFeature!.properties!.isRectangle = true;
             var rightTopCoords = [moveCoords[0], starCoords[1]];
             var buttomLeftCoords = [starCoords[0], moveCoords[1]];
             (this.map.getSource(this.id + "_rectangle") as mapboxgl.GeoJSONSource).setData({
@@ -725,6 +740,7 @@ class DrawCircle extends DrawBase<GeoJSON.Polygon> {
 
             // 动态画圆形
             moveCoords = coord;
+            this.currentFeature!.properties!.isCircle = true;
             if (starCoords.length != 0) {
                 // centerCoords = [(parseFloat(starCoords[0]) + parseFloat(moveCoords[0])) / 2, (parseFloat(starCoords[1]) + parseFloat(moveCoords[1])) / 2];
                 var _points = [];
@@ -766,8 +782,6 @@ class DrawCircle extends DrawBase<GeoJSON.Polygon> {
             // const centerPoint = [(starCoords[0] + coord[0]) / 2, (starCoords[1] + coord[1]) / 2];
             // const segment = getDistanceString({ type: 'LineString', coordinates: [coord, starCoords] });
             // console.log(`${centerPoint},${segment}`);
-
-
 
             if (coords.length === 2) {
                 (this.map.getSource(this.id + "_outline_addion") as mapboxgl.GeoJSONSource).setData({
