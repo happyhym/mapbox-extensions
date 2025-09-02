@@ -69,7 +69,7 @@ export class ShapeConverter implements IImportConverter {
             f.id = uuid();
             f.properties = {
                 id: f.id,
-                name: properties['name'] ?? "",
+                name: properties['name'] ?? (properties['Name'] ?? (properties['NAME'] ?? "")),
                 layerId,
                 date: Date.now() - 1704038400000,
                 style: options?.defaultStyle ?? getDefaultStyle(properties)
