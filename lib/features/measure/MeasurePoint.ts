@@ -4,7 +4,7 @@ import MeasureBase, { MeasureOptions, MeasureType } from "./MeasureBase";
 
 // oe: 
 // 使用 declare 关键字声明要在 Typescript 中调用已在 Javascript 中定义的全局变量或函数
-declare const dotNetHelper: any;
+declare const dotNetHelpers: any;
 let that: MeasurePoint;
 export function showElevation(elevation: number): void {
     alert(`Elevation: ${elevation}`);
@@ -146,7 +146,7 @@ export default class MeasurePoint extends MeasureBase {
 
     private onMapClickHandle = async (e: mapboxgl.MapMouseEvent & mapboxgl.EventData) => {
         // oe:
-        dotNetHelper.invokeMethodAsync("QueryDepth", e.lngLat.lng, e.lngLat.lat)
+        dotNetHelpers["Mapbox"].invokeMethodAsync("QueryDepth", e.lngLat.lng, e.lngLat.lat)
 
         // let elevation = await this.queryElevation(e.lngLat);
         // const id = creator.uuid();
