@@ -40,6 +40,8 @@ export interface MarkerFeatrueProperties {
     // oe: 是圆形时，保存圆心和半径
     centre?: string,
     radius?: number,
+    isRectangle?: boolean;
+    isCircle?: boolean,
     // 单位换算比例，以 km 为1，则 nm=1.852、m=0.001
     scale?: number,
     // 度格式的经纬度坐标
@@ -58,6 +60,7 @@ export interface MarkerLayerProperties {
     visibility?: "visible" | "none",
     readonly?: boolean,
     acl?: any,
+    host?: string,
     user?: string,
     isLoaded?: boolean
 }
