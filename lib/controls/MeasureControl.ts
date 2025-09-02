@@ -127,6 +127,8 @@ export class MeasureControl implements mapboxgl.IControl {
 
         this.element = dom.createHtmlElement('div',
             ["jas-ctrl-measure", "mapboxgl-ctrl", "mapboxgl-ctrl-group", this.options.horizontal ? "hor" : "ver"]);
+        this.element.setAttribute("id", "map-measureControl");
+        this.element.style.display = "";
 
         this.measures.forEach((value, key) => {
             const btn = this.createButton(value.svg, this.createClickMeasureButtonHandler(map, key));
@@ -161,8 +163,15 @@ export class MeasureControl implements mapboxgl.IControl {
 
             // 停止测量
             isMeasuring = false;
-            if (!woaLayerOn && !woaProfileOn)
-                document.getElementById("depthIndexSelector")!.style.display = document.getElementById("depthIndexValue")!.style.display = "none";
+            if (!woaLayerOn && !woaProfileOn) {
+                let depthIndexSelector = document.getElementById("depthIndexSelector");
+                if (depthIndexSelector)
+                    depthIndexSelector.style.display = "none";
+                let depthIndexValue = document.getElementById("depthIndexValue");
+                if (depthIndexValue)
+                    depthIndexValue.style.display = "none";
+                //document.getElementById("depthIndexSelector")!.style.display = document.getElementById("depthIndexValue")!.style.display = "none";
+            }
             this.currentMeasure.stop();
             // 颜色恢复默认
             this.measures.get(this.currentMeasure.type)!.controlElement!.style.background = this.options.btnBgColor!
