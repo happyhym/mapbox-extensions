@@ -45,7 +45,8 @@ export class EyeControl implements mapboxgl.IControl {
         this.options.overviewBoxColor ??= "blue";
         this.options.layoutSync ??= false;
 
-        this.element.setAttribute("id", "overview");
+        this.element.setAttribute("id", "map-eyeControl");
+        this.element.style.display = "";
         this.map.getContainer().appendChild(this.element);
     }
 
