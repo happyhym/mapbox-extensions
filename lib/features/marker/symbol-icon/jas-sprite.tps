@@ -191,6 +191,21 @@
             <key type="filename">images/游泳馆.png</key>
             <key type="filename">images/火车站.png</key>
             <key type="filename">images/邮局.png</key>
+            <key type="filename">images/circle-red.png</key>
+            <key type="filename">images/circle-green.png</key>
+            <key type="filename">images/circle-blue.png</key>
+            <key type="filename">images/circle-purple.png</key>
+            <key type="filename">images/circle-black.png</key>
+            <key type="filename">images/circle-yellow.png</key>
+            <key type="filename">images/circle-white.png</key>
+            <key type="filename">images/info-dark.png</key>
+            <key type="filename">images/warning-red.png</key>
+            <key type="filename">images/shys.png</key>
+            <key type="filename">images/fdz.png</key>
+            <key type="filename">images/船舶.png</key>
+            <key type="filename">images/飞机.png</key>
+            <key type="filename">images/平台1.png</key>
+            <key type="filename">images/平台2.png</key>
             <struct type="IndividualSpriteSettings">
                 <key>pivotPoint</key>
                 <point_f>0.5,0.5</point_f>
