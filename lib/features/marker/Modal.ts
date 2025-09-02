@@ -574,15 +574,16 @@ export function createFeaturePropertiesEditModal(
         properties.description = "";
 
     // oe: 坐标列表文本框
-    if (!properties?.centre && !properties?.radius)
+    if (!properties?.centre && !properties?.radius) {
         content.append(dom.createHtmlElement('div',
             ['jas-modal-content-edit-item'],
             [dom.createHtmlElement('label', [], ["拐点坐标"]), createTextareaBindingElement(properties, 'coordinateList', textarea => {
                 textarea.rows = 5;
                 // oe: 添加 name 属性用于判断用户是否填写了坐标列表
                 textarea.id = "coordinateListRequired";
-                textarea.title = "每行一组，格式：lng,lat（支持度、度分、度分秒格式）";
+                textarea.title = feature?.properties?.isRectangle?"每行一组，格式：lng,lat（支持度、度分、度分秒格式）\r\n如手动输入，请顺时针或逆时针输入拐点坐标，比如：12341、43214\r\n为了闭合，第5个点与第1个点坐标需一致":"每行一组，格式：lng,lat（支持度、度分、度分秒格式）";
             })]));
+    }
     // oe: 圆心坐标编辑文本框
     if (properties?.centre)
         content.append(dom.createHtmlElement('div',
