@@ -770,14 +770,14 @@
 }
 
 .jas-ctrl-marker-layer-header {
-    padding: 5px;
+    padding: 5px !important;
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
 
 .jas-ctrl-marker-layer-header:hover {
-    background-color: #f2f2f2;
+    background-color: rgba(50, 50, 50, 0.07);
 }
 
 .jas-ctrl-marker-headre-search {
@@ -807,7 +807,7 @@
 .jas-ctrl-marker-suffix-item {
     cursor: pointer;
     line-height: 0;
-    padding: 4px;
+    padding: 2px;
 }
 
 .jas-ctrl-marker-suffix-item:hover {
@@ -819,8 +819,8 @@
 }
 
 .jas-ctrl-marker-item-container {
-    height: 33px;
-    padding: 6px;
+    height: 30px;
+    padding: 5px;
     font-size: 15px;
     line-height: normal !important;
     display: flex;
