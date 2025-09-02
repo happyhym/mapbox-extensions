@@ -41,6 +41,7 @@ interface ILanguageOptions {
     cannotDeleteLastLayer: string,
     playStatus: string,
     acl: string,
+    host:string,
 
     warn: string,
     confirm: string,
@@ -105,6 +106,7 @@ const zh: ILanguageOptions = {
     cannotDeleteLastLayer: "无法删除最后一个图层",
     playStatus: "轨迹回放",
     acl: "权限设置",
+    host:"白名单主机",
     warn: "警告",
     confirm: "确认",
     cancel: "取消",
@@ -167,6 +169,7 @@ const en: ILanguageOptions = {
     cannotDeleteLastLayer: "can not delete last layer",
     playStatus: "track replay",
     acl: "permission setting",
+    host:"white list host",
     warn: "warning",
     confirm: "confirm",
     cancel: "cancel",
