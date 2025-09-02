@@ -4,7 +4,7 @@ import MeasureBase, { MeasureOptions, MeasureType } from "./MeasureBase";
 
 // oe: 
 // 使用 declare 关键字声明要在 Typescript 中调用已在 Javascript 中定义的全局变量或函数
-declare const dotNetHelper: any;
+declare const dotNetHelpers: any;
 declare const showProfile: any;
 declare const depthIndex: any;
 declare let woaDepthLon: any;
@@ -95,16 +95,28 @@ export default class MeasureProfile extends MeasureBase {
 
     protected onStart(): void {
         woaProfileOn = true;
-        document.getElementById("depthIndexSelector")!.style.display = document.getElementById("depthIndexValue")!.style.display = "";
+        let depthIndexSelector = document.getElementById("depthIndexSelector");
+        if (depthIndexSelector)
+            depthIndexSelector.style.display = "";
+        let depthIndexValue = document.getElementById("depthIndexValue");
+        if (depthIndexValue)
+            depthIndexValue.style.display = "";
+        // document.getElementById("depthIndexSelector")!.style.display = document.getElementById("depthIndexValue")!.style.display = "";
 
         this.map.on('click', this.onMapClickHandle);
     }
 
     protected onStop(): void {
         woaProfileOn = false;
-        if (!woaLayerOn && !woaProfileOn)
-            document.getElementById("depthIndexSelector")!.style.display = document.getElementById("depthIndexValue")!.style.display = "none";
-
+        if (!woaLayerOn && !woaProfileOn) {
+            let depthIndexSelector = document.getElementById("depthIndexSelector");
+            if (depthIndexSelector)
+                depthIndexSelector.style.display = "none";
+            let depthIndexValue = document.getElementById("depthIndexValue");
+            if (depthIndexValue)
+                depthIndexValue.style.display = "none";
+            // document.getElementById("depthIndexSelector")!.style.display = document.getElementById("depthIndexValue")!.style.display = "none";
+        }
         this.map.off('click', this.onMapClickHandle);
     }
 
@@ -138,8 +150,8 @@ export default class MeasureProfile extends MeasureBase {
         woaDepthLat = e.lngLat.lat;
         // oe: 显示剖面曲线图
         //showProfile(e.lngLat.lng, e.lngLat.lat);
-        await dotNetHelper.invokeMethodAsync("ShowWoaData", e.lngLat.lng, e.lngLat.lat, depthIndex)
+        await dotNetHelpers["Mapbox"].invokeMethodAsync("ShowWoaData", e.lngLat.lng, e.lngLat.lat, depthIndex)
         // 临时禁用
-        // await dotNetHelper.invokeMethodAsync("ShowVelocityData", e.lngLat.lng, e.lngLat.lat, depthIndex)
+        // await dotNetHelpers["Mapbox"].invokeMethodAsync("ShowVelocityData", e.lngLat.lng, e.lngLat.lat, depthIndex)
     }
 }
