@@ -27,7 +27,7 @@ export class GridControl implements mapboxgl.IControl {
 
     readonly element = dom.createHtmlElement('div');
 
-    constructor(private options: GridControlOptions = {}) {
+    constructor(private mapId: string, private options: GridControlOptions = {}) {
         this.options.fractionDigits ??= 0;
         this.options.show ??= true;
         this.options.color ??= "#FFF";
@@ -36,7 +36,7 @@ export class GridControl implements mapboxgl.IControl {
 
     setGridVisibility(map: mapboxgl.Map, show?: boolean): void {
         this.options.show = show;
-        map.getLayerGroup("grid-layers")!.show = show ?? true;
+        map.getLayerGroup(`${this.mapId}-grid-layers`)!.show = show ?? true;
     }
 
     onAdd(map: mapboxgl.Map): HTMLElement {
@@ -46,22 +46,22 @@ export class GridControl implements mapboxgl.IControl {
         this.setGridVisibility(map, this.options.show);
 
         function initGridLayer() {
-            var gridLayers = map.getLayerGroup("grid-layers");
+            var gridLayers = map.getLayerGroup(`${that.mapId}-grid-layers`);
             if (!gridLayers)
-                gridLayers = map.addLayerGroup("grid-layers");
+                gridLayers = map.addLayerGroup(`${that.mapId}-grid-layers`);
             // 经纬网格
-            map.addSource('grid-layer', {
+            map.addSource(`${that.mapId}-grid-layer`, {
                 'type': 'geojson',
                 'data': {
                     'type': 'FeatureCollection',
                     'features': []
                 }
             });
-            if (gridLayers.layerIds.indexOf("grid-layer") < 0)
+            if (gridLayers.layerIds.indexOf(`${that.mapId}-grid-layer`) < 0)
                 gridLayers.add({
-                    'id': 'grid-layer',
+                    'id': `${that.mapId}-grid-layer`,
                     'type': 'line',
-                    'source': "grid-layer",
+                    'source': `${that.mapId}-grid-layer`,
                     'layout': {
                         'line-join': 'round',
                         'line-cap': 'round',
@@ -75,18 +75,18 @@ export class GridControl implements mapboxgl.IControl {
                     }
                 });
             // 经纬度刻度
-            map.addSource('grid-text-left-layer', {
+            map.addSource(`${that.mapId}-grid-text-left-layer`, {
                 'type': 'geojson',
                 'data': {
                     'type': 'FeatureCollection',
                     'features': []
                 }
             });
-            if (gridLayers.layerIds.indexOf("grid-text-left-layer") < 0)
+            if (gridLayers.layerIds.indexOf(`${that.mapId}-grid-text-left-layer`) < 0)
                 gridLayers.add({
-                    'id': 'grid-text-left-layer',
+                    'id': `${that.mapId}-grid-text-left-layer`,
                     'type': 'symbol',
-                    'source': "grid-text-left-layer",
+                    'source': `${that.mapId}-grid-text-left-layer`,
                     "layout": {
                         "text-field": ["format", ["get", "col1"], {
                             "text-font": ["literal", ["Open Sans Regular"]],
@@ -113,120 +113,120 @@ export class GridControl implements mapboxgl.IControl {
                         'visibility': 'none'
                     }
                 });
-            map.addSource('grid-text-right-layer', {
+            map.addSource(`${that.mapId}-grid-text-right-layer`, {
                 'type': 'geojson',
                 'data': {
                     'type': 'FeatureCollection',
                     'features': []
                 }
             });
-            if (gridLayers.layerIds.indexOf("grid-text-right-layer") < 0)
-            gridLayers.add({
-                'id': 'grid-text-right-layer',
-                'type': 'symbol',
-                'source': "grid-text-right-layer",
-                "layout": {
-                    "text-field": ["format", ["get", "col1"], {
-                        "text-font": ["literal", ["Open Sans Regular"]],
-                        "text-color": that.options.color,
-                        "font-scale": 1.0
-                    }, " ",
-                        ["get", "col2"], {
-                            "text-font": ["literal", ["DIN Offc Pro Italic"]],
+            if (gridLayers.layerIds.indexOf(`${that.mapId}-grid-text-right-layer`) < 0)
+                gridLayers.add({
+                    'id': `${that.mapId}-grid-text-right-layer`,
+                    'type': 'symbol',
+                    'source': `${that.mapId}-grid-text-right-layer`,
+                    "layout": {
+                        "text-field": ["format", ["get", "col1"], {
+                            "text-font": ["literal", ["Open Sans Regular"]],
                             "text-color": that.options.color,
                             "font-scale": 1.0
                         }, " ",
-                        ["get", "col3"], {
-                            "text-font": ["literal", ["Arial Unicode MS Regular"]],
-                            "text-color": that.options.color,
-                            "font-scale": 1.0
-                        }],
-                    "text-size": that.options.textSize,
-                    "text-font": ["Open Sans Regular", "Arial Unicode MS Regular"],
-                    "text-offset": [-3, 0],
-                    "text-anchor": "left",
-                    "text-justify": "left",
-                    "text-max-width": 20,
-                    "text-allow-overlap": false,
-                    'visibility': 'none'
-                }
-            });
-            map.addSource('grid-text-top-layer', {
+                            ["get", "col2"], {
+                                "text-font": ["literal", ["DIN Offc Pro Italic"]],
+                                "text-color": that.options.color,
+                                "font-scale": 1.0
+                            }, " ",
+                            ["get", "col3"], {
+                                "text-font": ["literal", ["Arial Unicode MS Regular"]],
+                                "text-color": that.options.color,
+                                "font-scale": 1.0
+                            }],
+                        "text-size": that.options.textSize,
+                        "text-font": ["Open Sans Regular", "Arial Unicode MS Regular"],
+                        "text-offset": [-3, 0],
+                        "text-anchor": "left",
+                        "text-justify": "left",
+                        "text-max-width": 20,
+                        "text-allow-overlap": false,
+                        'visibility': 'none'
+                    }
+                });
+            map.addSource(`${that.mapId}-grid-text-top-layer`, {
                 'type': 'geojson',
                 'data': {
                     'type': 'FeatureCollection',
                     'features': []
                 }
             });
-            if (gridLayers.layerIds.indexOf("grid-text-top-layer") < 0)
-            gridLayers.add({
-                'id': 'grid-text-top-layer',
-                'type': 'symbol',
-                'source': "grid-text-top-layer",
-                "layout": {
-                    "text-field": ["format", ["get", "col1"], {
-                        "text-font": ["literal", ["Open Sans Regular"]],
-                        "text-color": that.options.color,
-                        "font-scale": 1.0
-                    }, " ",
-                        ["get", "col2"], {
-                            "text-font": ["literal", ["DIN Offc Pro Italic"]],
+            if (gridLayers.layerIds.indexOf(`${that.mapId}-grid-text-top-layer`) < 0)
+                gridLayers.add({
+                    'id': `${that.mapId}-grid-text-top-layer`,
+                    'type': 'symbol',
+                    'source': `${that.mapId}-grid-text-top-layer`,
+                    "layout": {
+                        "text-field": ["format", ["get", "col1"], {
+                            "text-font": ["literal", ["Open Sans Regular"]],
                             "text-color": that.options.color,
                             "font-scale": 1.0
                         }, " ",
-                        ["get", "col3"], {
-                            "text-font": ["literal", ["Arial Unicode MS Regular"]],
-                            "text-color": that.options.color,
-                            "font-scale": 1.0
-                        }],
-                    "text-size": that.options.textSize,
-                    "text-font": ["Open Sans Regular", "Arial Unicode MS Regular"],
-                    "text-offset": [-1.5, 0.6],
-                    "text-anchor": "left",
-                    "text-justify": "left",
-                    "text-max-width": 20,
-                    "text-allow-overlap": false,
-                    'visibility': 'none'
-                }
-            });
-            map.addSource('grid-text-bottom-layer', {
+                            ["get", "col2"], {
+                                "text-font": ["literal", ["DIN Offc Pro Italic"]],
+                                "text-color": that.options.color,
+                                "font-scale": 1.0
+                            }, " ",
+                            ["get", "col3"], {
+                                "text-font": ["literal", ["Arial Unicode MS Regular"]],
+                                "text-color": that.options.color,
+                                "font-scale": 1.0
+                            }],
+                        "text-size": that.options.textSize,
+                        "text-font": ["Open Sans Regular", "Arial Unicode MS Regular"],
+                        "text-offset": [-1.5, 0.6],
+                        "text-anchor": "left",
+                        "text-justify": "left",
+                        "text-max-width": 20,
+                        "text-allow-overlap": false,
+                        'visibility': 'none'
+                    }
+                });
+            map.addSource(`${that.mapId}-grid-text-bottom-layer`, {
                 'type': 'geojson',
                 'data': {
                     'type': 'FeatureCollection',
                     'features': []
                 }
             });
-            if (gridLayers.layerIds.indexOf("grid-text-bottom-layer") < 0)
-            gridLayers.add({
-                'id': 'grid-text-bottom-layer',
-                'type': 'symbol',
-                'source': "grid-text-bottom-layer",
-                "layout": {
-                    "text-field": ["format", ["get", "col1"], {
-                        "text-font": ["literal", ["Open Sans Regular"]],
-                        "text-color": that.options.color,
-                        "font-scale": 1.0
-                    }, " ",
-                        ["get", "col2"], {
-                            "text-font": ["literal", ["DIN Offc Pro Italic"]],
+            if (gridLayers.layerIds.indexOf(`${that.mapId}-grid-text-bottom-layer`) < 0)
+                gridLayers.add({
+                    'id': `${that.mapId}-grid-text-bottom-layer`,
+                    'type': 'symbol',
+                    'source': `${that.mapId}-grid-text-bottom-layer`,
+                    "layout": {
+                        "text-field": ["format", ["get", "col1"], {
+                            "text-font": ["literal", ["Open Sans Regular"]],
                             "text-color": that.options.color,
                             "font-scale": 1.0
                         }, " ",
-                        ["get", "col3"], {
-                            "text-font": ["literal", ["Arial Unicode MS Regular"]],
-                            "text-color": that.options.color,
-                            "font-scale": 1.0
-                        }],
-                    "text-size": that.options.textSize,
-                    "text-font": ["Open Sans Regular", "Arial Unicode MS Regular"],
-                    "text-offset": [-1.5, -0.6],
-                    "text-anchor": "left",
-                    "text-justify": "left",
-                    "text-max-width": 20,
-                    "text-allow-overlap": false,
-                    'visibility': 'none'
-                }
-            });
+                            ["get", "col2"], {
+                                "text-font": ["literal", ["DIN Offc Pro Italic"]],
+                                "text-color": that.options.color,
+                                "font-scale": 1.0
+                            }, " ",
+                            ["get", "col3"], {
+                                "text-font": ["literal", ["Arial Unicode MS Regular"]],
+                                "text-color": that.options.color,
+                                "font-scale": 1.0
+                            }],
+                        "text-size": that.options.textSize,
+                        "text-font": ["Open Sans Regular", "Arial Unicode MS Regular"],
+                        "text-offset": [-1.5, -0.6],
+                        "text-anchor": "left",
+                        "text-justify": "left",
+                        "text-max-width": 20,
+                        "text-allow-overlap": false,
+                        'visibility': 'none'
+                    }
+                });
         }
 
         function updateGridLayer() {
@@ -324,29 +324,29 @@ export class GridControl implements mapboxgl.IControl {
 
             // 使用 globe 投影时，根据缩放级别调整文本偏移
             if (map.getProjection().name === "globe") {
-                map.setLayoutProperty("grid-text-left-layer", "text-offset", [zoom < 6 ? 6 : 0.5, 0]);
-                map.setLayoutProperty("grid-text-right-layer", "text-offset", [zoom < 6 ? -8 : -3, 0]);
-                map.setLayoutProperty("grid-text-top-layer", "text-offset", [-1.5, zoom < 4 ? 6 : zoom < 4.5 ? 5 : zoom < 5 ? 4 : zoom < 5.5 ? 3 : zoom < 6 ? 2 : 1]);
-                map.setLayoutProperty("grid-text-bottom-layer", "text-offset", [-1.5, zoom < 4 ? -16 : zoom < 4.5 ? -12 : zoom < 5 ? -8 : zoom < 5.5 ? -6 : zoom < 6 ? -5 : -1]);
+                map.setLayoutProperty(`${that.mapId}-grid-text-left-layer`, "text-offset", [zoom < 6 ? 6 : 0.5, 0]);
+                map.setLayoutProperty(`${that.mapId}-grid-text-right-layer`, "text-offset", [zoom < 6 ? -8 : -3, 0]);
+                map.setLayoutProperty(`${that.mapId}-grid-text-top-layer`, "text-offset", [-1.5, zoom < 4 ? 6 : zoom < 4.5 ? 5 : zoom < 5 ? 4 : zoom < 5.5 ? 3 : zoom < 6 ? 2 : 1]);
+                map.setLayoutProperty(`${that.mapId}-grid-text-bottom-layer`, "text-offset", [-1.5, zoom < 4 ? -16 : zoom < 4.5 ? -12 : zoom < 5 ? -8 : zoom < 5.5 ? -6 : zoom < 6 ? -5 : -1]);
             }
 
-            (map.getSource("grid-layer") as any).setData({
+            (map.getSource(`${that.mapId}-grid-layer`) as any).setData({
                 'type': 'FeatureCollection',
                 'features': gridFeatures
             });
-            (map.getSource("grid-text-left-layer") as any).setData({
+            (map.getSource(`${that.mapId}-grid-text-left-layer`) as any).setData({
                 'type': 'FeatureCollection',
                 'features': textLeftFeatures
             });
-            (map.getSource("grid-text-right-layer") as any).setData({
+            (map.getSource(`${that.mapId}-grid-text-right-layer`) as any).setData({
                 'type': 'FeatureCollection',
                 'features': textRigthFeatures
             });
-            (map.getSource("grid-text-top-layer") as any).setData({
+            (map.getSource(`${that.mapId}-grid-text-top-layer`) as any).setData({
                 'type': 'FeatureCollection',
                 'features': textTopFeatures
             });
-            (map.getSource("grid-text-bottom-layer") as any).setData({
+            (map.getSource(`${that.mapId}-grid-text-bottom-layer`) as any).setData({
                 'type': 'FeatureCollection',
                 'features': textBottomFeatures
             });
