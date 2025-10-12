@@ -1096,8 +1096,8 @@ class MarkerLayer extends AbstractLinkP<MarkerManager> {
                 item.feature.properties.style.visibility = this.layerGroup.show ? "visible" : "none";
             });
 
-            // // 年度运行情况
-            // if(this.properties.name.includes("运行情况")){
+            // // 年度数据统计
+            // if(this.properties.name.includes("数据统计")){
             //     alert(this.properties.name);
             // }
 
@@ -1519,9 +1519,18 @@ class MarkerItem extends AbstractLinkP<MarkerLayer> {
     } = {}) {
         const element = dom.createHtmlElement('div', ['jas-ctrl-marker-suffix']);
 
+        // 添加上传按钮
+        if (this.feature.properties.name.endsWith("深海勇士") || this.feature.properties.name.endsWith("奋斗者") || this.feature.properties.name.endsWith("深海狮子鱼")) {
+            element.append(
+                this.createSuffixUpload(),
+                this.createSuffixChart()
+            );
+        }
         // oe: 船舶航行动态数据分析（船舶列表），每条船都有显示/隐藏按钮
+        // console.log("this.feature.properties.id",this.feature.properties.id);
         if (this.feature.properties.id.endsWith("-ship-menu-tree")) {
             this.visible = this.createShipLocationVisible();
+            // 添加上传按钮
             if (allowUploadTrackUsers.includes(userName))
                 element.append(
                     this.createSuffixUpload()
@@ -1768,8 +1777,17 @@ class MarkerItem extends AbstractLinkP<MarkerLayer> {
             const isEye = this.visible.innerHTML === eye;
             this.visible.innerHTML = isEye ? uneye : eye;
             this.feature.properties.style.visibility = isEye ? "none" : "visible";
-            // 年度运行情况
-            if (this.feature.properties.id.includes("运行情况")) {
+
+            // CLIWOC 热力图控制面板
+            if (this.feature.properties?.id == "CLIWOC-CLIWOC-HEATMAP-group-readonly") {
+                if (isEye)
+                    document.getElementById("cliwocPopover")!.style.display = 'none';
+                else
+                    document.getElementById("cliwocPopover")!.style.display = 'block';
+            }
+
+            // 年度数据统计
+            if (this.feature.properties.id.includes("年度数据统计")) {
                 // 单击轨迹显示/隐藏按钮时，根据轨迹图层状态，调用 .NET 接口初始化
                 let annualReportLayerGroup = this.map.getLayerGroup(this.feature.properties?.layerId);
                 if (!annualReportLayerGroup)
@@ -1781,7 +1799,7 @@ class MarkerItem extends AbstractLinkP<MarkerLayer> {
                         // 船舶 mmsi
                         if (this.feature.properties.description != "-")
                             // 根据船舶 mmsi 获取船舶航行轨迹
-                            await dotNetHelpers["Mapbox"].invokeMethodAsync("FetchAnnualReport", this.feature.properties.description, this.feature.properties.id.substring(0, 4),markerControlKey, undefined);
+                            await dotNetHelpers["Mapbox"].invokeMethodAsync("FetchAnnualReport", this.feature.properties.description, this.feature.properties.id.substring(0, 4), markerControlKey, undefined);
                         else {
                             // 根据潜器名称获取潜次下潜位置分布
                             await dotNetHelpers["Mapbox"].invokeMethodAsync("ShowToast", "年度潜次分布", `请添加${this.feature.properties.id.substring(0, 4)}年下潜数据`, "Warning");
@@ -1981,5 +1999,54 @@ class MarkerItem extends AbstractLinkP<MarkerLayer> {
         });
 
         return upload;
+    }
+
+    private createSuffixChart() {
+        const uploadUI = dom.createHtmlElement('input', [], [], {
+            attributes: {
+                type: "file",
+                accept: ".trk,.txt",
+                "multiple": "multiple"
+            }
+        });
+
+        uploadUI.onchange = async e => {
+            const files = (e.target as HTMLInputElement).files;
+            if (files && files?.length > 0) {
+                const formData = new FormData();
+                formData.append("user", userName);
+                for (let i = 0; i < files.length; i++) {
+                    formData.append("files[]", files[i]);
+                }
+                // formData.append("file", files[0]);
+                // await fetch("http://127.0.0.1:8123/api/Import/PostFile", {
+                await fetch("api/Upload/UploadTrack", {
+                    // 在使用 form-data 提交时不应手动设置 content-type
+                    // headers: {
+                    //     'Content-Type': 'multipart/form-data'
+                    // },
+                    method: 'POST',
+                    body: formData
+                }).then(async response => await response.text())
+                    .then(msg => alert(msg));
+            }
+
+            // 处理input file不能重复上传
+            uploadUI.type = "text";
+            uploadUI.type = "file";
+        }
+
+        const chart = dom.createHtmlElement('div', ["jas-ctrl-marker-suffix-item"], [
+            new SvgBuilder('marker_line').resize(15, 15).create('svg')
+        ], {
+            attributes: {
+                title: lang.chart
+            },
+            onClick: () => {
+                uploadUI.click();
+            }
+        });
+
+        return chart;
     }
 }
