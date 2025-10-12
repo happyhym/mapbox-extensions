@@ -47,6 +47,8 @@ interface ILanguageOptions {
     confirm: string,
     cancel: string,
     upload: string,
+    prompt: string,
+    chart:string,
 
     word: string,
     point: string,
@@ -111,6 +113,8 @@ const zh: ILanguageOptions = {
     confirm: "确认",
     cancel: "取消",
     upload: "上传",
+    prompt:"提示",
+    chart:"图表",
 
     word: "文字",
     point: "点",
@@ -174,6 +178,8 @@ const en: ILanguageOptions = {
     confirm: "confirm",
     cancel: "cancel",
     upload: "upload",
+    prompt:"prompt",
+    chart:"chart",
 
     word: "word",
     point: "point",
