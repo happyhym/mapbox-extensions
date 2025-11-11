@@ -123,10 +123,12 @@ export default class MeasurePoint extends MeasureBase {
             return 99999;
     }
 
-    // oe: 通过查询 ArcGIS 服务器获取高程数据
-    static addElevationMarker(lng: number, lat: number, elevation: number): void {
+    // oe: 弃用：因为 addElevationMarker 为静态方法，对应拥有多个 mapbox 对象时，只在最后的 mapbox 对象上有效。
+    // static addElevationMarker(lng: number, lat: number, elevation: number): void {
+    // 改为非静态函数
+    private addElevationMarker(lng: number, lat: number, elevation: number): void {
         const id = creator.uuid();
-        that.geojson.features.push({
+        this.geojson.features.push({
             type: 'Feature',
             id,
             geometry: {
@@ -134,37 +136,24 @@ export default class MeasurePoint extends MeasureBase {
                 coordinates: [lng, lat],
             },
             properties: {
-                "coord": that.options.createText!(lng, lat, elevation),
+                "coord": this.options.createText!(lng, lat, elevation),
                 id
             }
         });
 
-        that.options.onDrawed?.call(this, id, that.geojson.features.at(-1)!.geometry as GeoJSON.Point);
+        this.options.onDrawed?.call(this, id, this.geojson.features.at(-1)!.geometry as GeoJSON.Point);
 
-        that.updateGeometryDataSource();
+        this.updateGeometryDataSource();
     }
 
     private onMapClickHandle = async (e: mapboxgl.MapMouseEvent & mapboxgl.EventData) => {
-        // oe:
-        dotNetHelpers["Mapbox"].invokeMethodAsync("QueryDepth", e.lngLat.lng, e.lngLat.lat)
-
         // let elevation = await this.queryElevation(e.lngLat);
-        // const id = creator.uuid();
-        // this.geojson.features.push({
-        //     type: 'Feature',
-        //     id,
-        //     geometry: {
-        //         type: 'Point',
-        //         coordinates: [e.lngLat.lng, e.lngLat.lat],
-        //     },
-        //     properties: {
-        //         "coord": this.options.createText!(e.lngLat.lng, e.lngLat.lat, elevation),
-        //         id
-        //     }
-        // });
-
-        // this.options.onDrawed?.call(this, id, this.geojson.features.at(-1)!.geometry as GeoJSON.Point);
-
-        // this.updateGeometryDataSource();
+        // oe: 解决 addElevationMarker 为静态方法无法有效响应多个 mapbox 对象的问题
+        let helper = dotNetHelpers["Mapbox"];
+        if (!helper)
+            helper = dotNetHelpers["cliwoc"];
+        let elevation = await helper.invokeMethodAsync("QueryDepth", e.lngLat.lng, e.lngLat.lat);
+        // console.log(`[${e.lngLat.lng.toFixed(6)}, ${e.lngLat.lat.toFixed(6)}]: ${elevation.toFixed(1)}m`);
+        this.addElevationMarker(e.lngLat.lng, e.lngLat.lat, elevation);
     }
 }
