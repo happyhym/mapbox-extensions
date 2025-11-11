@@ -20,6 +20,10 @@ export interface EyeControlOptions {
      * 大地图切换的时候小地图是否同步切换？
      */
     layoutSync?: boolean;
+    /**
+     * 所属的 map 对象的 id
+     */
+    mapId?: string;
 }
 
 /**
@@ -27,7 +31,7 @@ export interface EyeControlOptions {
  */
 export class EyeControl implements mapboxgl.IControl {
     readonly element = dom.createHtmlElement('div', ["jas-ctrl-eye", "mapboxgl-ctrl"]);
-    readonly overviewBoxSourceId = "overviewBox";
+    private overviewBoxSourceId = "overviewBox";
     private get currentPolygon(): GeoJSON.Feature<GeoJSON.Polygon, null> {
         return {
             type: 'Feature',
@@ -44,8 +48,9 @@ export class EyeControl implements mapboxgl.IControl {
         this.options.zoomDiff ??= 4;
         this.options.overviewBoxColor ??= "blue";
         this.options.layoutSync ??= false;
+        this.overviewBoxSourceId=`${this.options.mapId ?? "map"}-overviewBox`;
 
-        this.element.setAttribute("id", "map-eyeControl");
+        this.element.setAttribute("id", `${this.options.mapId ?? "map"}-eyeControl`);
         this.element.style.display = "";
         this.map.getContainer().appendChild(this.element);
     }
