@@ -45,6 +45,10 @@ export interface MeasureControlOptions {
      * 允许的测量模式，默认所有
      */
     enableModes?: MeasureType[];
+    /**
+     * 所属的 map 对象的 id
+     */
+    mapId?: string;
 
     /**
      * 删除feature回调
@@ -127,7 +131,7 @@ export class MeasureControl implements mapboxgl.IControl {
 
         this.element = dom.createHtmlElement('div',
             ["jas-ctrl-measure", "mapboxgl-ctrl", "mapboxgl-ctrl-group", this.options.horizontal ? "hor" : "ver"]);
-        this.element.setAttribute("id", "map-measureControl");
+        this.element.setAttribute("id", `${this.options.mapId ?? "map"}-measureControl`);
         this.element.style.display = "";
 
         this.measures.forEach((value, key) => {
