@@ -232,6 +232,7 @@ export default class MarkerManager {
             // 禁止图形平移
             const onDrag = MapboxDraw.modes.direct_select.onDrag;
             MapboxDraw.modes.direct_select.onDrag = function (this, state, e) {
+                alert("onDrag");
                 if (state.selectedCoordPaths.length > 0)
                     onDrag?.call(this, state, e);
             };
@@ -1069,7 +1070,7 @@ class MarkerLayer extends AbstractLinkP<MarkerManager> {
             if (readonlyLayers.includes(this.properties.name) && this.map.getLayer(this.properties.name))
                 this.map.setLayoutProperty(this.properties.name, "visibility", this.layerGroup.show ? "visible" : "none");
             // 点击了图层组的显隐按钮，加载未加载的图形要素
-            console.log(`MarkerLayer this.properties.name: ${this.properties.name}`);
+            // console.log(`MarkerLayer this.properties.name: ${this.properties.name}`);
             // if (this.properties.name == "地球板块和洋壳数据" || this.properties.name == "海南省深海技术创新中心展") {
             if (this.properties.name != "") {
                 this.items.forEach(async (item: any) => {
@@ -1785,10 +1786,21 @@ class MarkerItem extends AbstractLinkP<MarkerLayer> {
 
             // CLIWOC 热力图控制面板
             if (this.feature.properties?.id == "CLIWOC-CLIWOC-HEATMAP-group-readonly") {
-                if (isEye)
-                    document.getElementById("cliwocPopover")!.style.display = 'none';
-                else
-                    document.getElementById("cliwocPopover")!.style.display = 'block';
+                let cliwocPopover = document.getElementById("cliwocPopover");
+                if (cliwocPopover)
+                    if (isEye)
+                        cliwocPopover!.style.display = 'none';
+                    else
+                        cliwocPopover!.style.display = 'block';
+            }
+            // 加载海南省深海技术创新中心展资助信息面板
+            if (this.feature.properties?.id.includes("资助信息")) {
+                let dstic = document.getElementById("dstic");
+                if (dstic)
+                    if (isEye)
+                        dstic!.style.display = 'none';
+                    else
+                        dstic!.style.display = 'block';
             }
 
             // 年度数据统计
