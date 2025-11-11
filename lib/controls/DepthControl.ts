@@ -51,13 +51,12 @@ export class DepthControl implements mapboxgl.IControl {
     }
 
     onAdd(map: mapboxgl.Map): HTMLElement {
-        let that = this;
-        // map.on("mousemove", function (e) {
+        // map.on("mousemove", async (e: any) => {
         //     let lng = e.lngLat.lng;
         //     let lat = e.lngLat.lat;
-        //     that.element.innerHTML = `${that.options.lngPrefix} ${Math.abs(lng).toFixed(that.options.fractionDigits)}° ${lng > 0 ? "E" : "W"}&nbsp;&nbsp;${that.options.latPrefix} ${Math.abs(lat).toFixed(that.options.fractionDigits)}° ${lat > 0 ? "N" : "S"}`;
+        //     this.element.innerHTML = `${this.options.lngPrefix} ${Math.abs(lng).toFixed(this.options.fractionDigits)}° ${lng > 0 ? "E" : "W"}&nbsp;&nbsp;${this.options.latPrefix} ${Math.abs(lat).toFixed(this.options.fractionDigits)}° ${lat > 0 ? "N" : "S"}`;
         // });
-        return that.element;
+        return this.element;
     }
 
     onRemove(map: mapboxgl.Map): void {
