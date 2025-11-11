@@ -1,4 +1,4 @@
-import mapboxgl from "mapbox-gl";
+import { IControl, Map } from "mapbox-gl";
 import { dom } from 'wheater';
 
 export interface GridControlOptions {
@@ -18,50 +18,64 @@ export interface GridControlOptions {
      * 经纬度网格/文本大小
      */
     textSize?: number;
+    /**
+     * 所属的 map 对象的 id
+     */
+    mapId?: string;
 }
 
 /**
  * 经纬度网格控件
  */
-export class GridControl implements mapboxgl.IControl {
+export class GridControl implements IControl {
 
     readonly element = dom.createHtmlElement('div');
+    public map?: Map;
 
-    constructor(private mapId: string, private options: GridControlOptions = {}) {
+    constructor(private options: GridControlOptions = {}) {
         this.options.fractionDigits ??= 0;
         this.options.show ??= true;
         this.options.color ??= "#FFF";
         this.options.textSize ??= 16;
+        this.element.setAttribute("id", `${this.options.mapId ?? "map"}-gridControl`);
+        this.element.style.display = "";
     }
 
-    setGridVisibility(map: mapboxgl.Map, show?: boolean): void {
+    setGridVisibility(show?: boolean): void {
         this.options.show = show;
-        map.getLayerGroup(`${this.mapId}-grid-layers`)!.show = show ?? true;
+        this.map!.getLayerGroup(`${this.options.mapId}-grid-layers`)!.show = show ?? true;
     }
 
-    onAdd(map: mapboxgl.Map): HTMLElement {
+    public toggleGridVisibility(): void {
+        this.options.show=!this.options.show;
+        this.setGridVisibility(this.options.show);
+    }
+
+    onAdd(map: Map): HTMLElement {
+        this.map = map;
         let that = this;
+
         initGridLayer();
         updateGridLayer();
-        this.setGridVisibility(map, this.options.show);
+        this.setGridVisibility(this.options.show);
 
         function initGridLayer() {
-            var gridLayers = map.getLayerGroup(`${that.mapId}-grid-layers`);
+            let gridLayers = map.getLayerGroup(`${that.options.mapId}-grid-layers`);
             if (!gridLayers)
-                gridLayers = map.addLayerGroup(`${that.mapId}-grid-layers`);
+                gridLayers = map.addLayerGroup(`${that.options.mapId}-grid-layers`);
             // 经纬网格
-            map.addSource(`${that.mapId}-grid-layer`, {
+            map.addSource(`${that.options.mapId}-grid-layer`, {
                 'type': 'geojson',
                 'data': {
                     'type': 'FeatureCollection',
                     'features': []
                 }
             });
-            if (gridLayers.layerIds.indexOf(`${that.mapId}-grid-layer`) < 0)
+            if (gridLayers.layerIds.indexOf(`${that.options.mapId}-grid-layer`) < 0)
                 gridLayers.add({
-                    'id': `${that.mapId}-grid-layer`,
+                    'id': `${that.options.mapId}-grid-layer`,
                     'type': 'line',
-                    'source': `${that.mapId}-grid-layer`,
+                    'source': `${that.options.mapId}-grid-layer`,
                     'layout': {
                         'line-join': 'round',
                         'line-cap': 'round',
@@ -75,18 +89,18 @@ export class GridControl implements mapboxgl.IControl {
                     }
                 });
             // 经纬度刻度
-            map.addSource(`${that.mapId}-grid-text-left-layer`, {
+            map.addSource(`${that.options.mapId}-grid-text-left-layer`, {
                 'type': 'geojson',
                 'data': {
                     'type': 'FeatureCollection',
                     'features': []
                 }
             });
-            if (gridLayers.layerIds.indexOf(`${that.mapId}-grid-text-left-layer`) < 0)
+            if (gridLayers.layerIds.indexOf(`${that.options.mapId}-grid-text-left-layer`) < 0)
                 gridLayers.add({
-                    'id': `${that.mapId}-grid-text-left-layer`,
+                    'id': `${that.options.mapId}-grid-text-left-layer`,
                     'type': 'symbol',
-                    'source': `${that.mapId}-grid-text-left-layer`,
+                    'source': `${that.options.mapId}-grid-text-left-layer`,
                     "layout": {
                         "text-field": ["format", ["get", "col1"], {
                             "text-font": ["literal", ["Open Sans Regular"]],
@@ -113,18 +127,18 @@ export class GridControl implements mapboxgl.IControl {
                         'visibility': 'none'
                     }
                 });
-            map.addSource(`${that.mapId}-grid-text-right-layer`, {
+            map.addSource(`${that.options.mapId}-grid-text-right-layer`, {
                 'type': 'geojson',
                 'data': {
                     'type': 'FeatureCollection',
                     'features': []
                 }
             });
-            if (gridLayers.layerIds.indexOf(`${that.mapId}-grid-text-right-layer`) < 0)
+            if (gridLayers.layerIds.indexOf(`${that.options.mapId}-grid-text-right-layer`) < 0)
                 gridLayers.add({
-                    'id': `${that.mapId}-grid-text-right-layer`,
+                    'id': `${that.options.mapId}-grid-text-right-layer`,
                     'type': 'symbol',
-                    'source': `${that.mapId}-grid-text-right-layer`,
+                    'source': `${that.options.mapId}-grid-text-right-layer`,
                     "layout": {
                         "text-field": ["format", ["get", "col1"], {
                             "text-font": ["literal", ["Open Sans Regular"]],
@@ -151,18 +165,18 @@ export class GridControl implements mapboxgl.IControl {
                         'visibility': 'none'
                     }
                 });
-            map.addSource(`${that.mapId}-grid-text-top-layer`, {
+            map.addSource(`${that.options.mapId}-grid-text-top-layer`, {
                 'type': 'geojson',
                 'data': {
                     'type': 'FeatureCollection',
                     'features': []
                 }
             });
-            if (gridLayers.layerIds.indexOf(`${that.mapId}-grid-text-top-layer`) < 0)
+            if (gridLayers.layerIds.indexOf(`${that.options.mapId}-grid-text-top-layer`) < 0)
                 gridLayers.add({
-                    'id': `${that.mapId}-grid-text-top-layer`,
+                    'id': `${that.options.mapId}-grid-text-top-layer`,
                     'type': 'symbol',
-                    'source': `${that.mapId}-grid-text-top-layer`,
+                    'source': `${that.options.mapId}-grid-text-top-layer`,
                     "layout": {
                         "text-field": ["format", ["get", "col1"], {
                             "text-font": ["literal", ["Open Sans Regular"]],
@@ -189,18 +203,18 @@ export class GridControl implements mapboxgl.IControl {
                         'visibility': 'none'
                     }
                 });
-            map.addSource(`${that.mapId}-grid-text-bottom-layer`, {
+            map.addSource(`${that.options.mapId}-grid-text-bottom-layer`, {
                 'type': 'geojson',
                 'data': {
                     'type': 'FeatureCollection',
                     'features': []
                 }
             });
-            if (gridLayers.layerIds.indexOf(`${that.mapId}-grid-text-bottom-layer`) < 0)
+            if (gridLayers.layerIds.indexOf(`${that.options.mapId}-grid-text-bottom-layer`) < 0)
                 gridLayers.add({
-                    'id': `${that.mapId}-grid-text-bottom-layer`,
+                    'id': `${that.options.mapId}-grid-text-bottom-layer`,
                     'type': 'symbol',
-                    'source': `${that.mapId}-grid-text-bottom-layer`,
+                    'source': `${that.options.mapId}-grid-text-bottom-layer`,
                     "layout": {
                         "text-field": ["format", ["get", "col1"], {
                             "text-font": ["literal", ["Open Sans Regular"]],
@@ -324,29 +338,29 @@ export class GridControl implements mapboxgl.IControl {
 
             // 使用 globe 投影时，根据缩放级别调整文本偏移
             if (map.getProjection().name === "globe") {
-                map.setLayoutProperty(`${that.mapId}-grid-text-left-layer`, "text-offset", [zoom < 6 ? 6 : 0.5, 0]);
-                map.setLayoutProperty(`${that.mapId}-grid-text-right-layer`, "text-offset", [zoom < 6 ? -8 : -3, 0]);
-                map.setLayoutProperty(`${that.mapId}-grid-text-top-layer`, "text-offset", [-1.5, zoom < 4 ? 6 : zoom < 4.5 ? 5 : zoom < 5 ? 4 : zoom < 5.5 ? 3 : zoom < 6 ? 2 : 1]);
-                map.setLayoutProperty(`${that.mapId}-grid-text-bottom-layer`, "text-offset", [-1.5, zoom < 4 ? -16 : zoom < 4.5 ? -12 : zoom < 5 ? -8 : zoom < 5.5 ? -6 : zoom < 6 ? -5 : -1]);
+                map.setLayoutProperty(`${that.options.mapId}-grid-text-left-layer`, "text-offset", [zoom < 6 ? 6 : 0.5, 0]);
+                map.setLayoutProperty(`${that.options.mapId}-grid-text-right-layer`, "text-offset", [zoom < 6 ? -8 : -3, 0]);
+                map.setLayoutProperty(`${that.options.mapId}-grid-text-top-layer`, "text-offset", [-1.5, zoom < 4 ? 6 : zoom < 4.5 ? 5 : zoom < 5 ? 4 : zoom < 5.5 ? 3 : zoom < 6 ? 2 : 1]);
+                map.setLayoutProperty(`${that.options.mapId}-grid-text-bottom-layer`, "text-offset", [-1.5, zoom < 4 ? -16 : zoom < 4.5 ? -12 : zoom < 5 ? -8 : zoom < 5.5 ? -6 : zoom < 6 ? -5 : -1]);
             }
 
-            (map.getSource(`${that.mapId}-grid-layer`) as any).setData({
+            (map.getSource(`${that.options.mapId}-grid-layer`) as any).setData({
                 'type': 'FeatureCollection',
                 'features': gridFeatures
             });
-            (map.getSource(`${that.mapId}-grid-text-left-layer`) as any).setData({
+            (map.getSource(`${that.options.mapId}-grid-text-left-layer`) as any).setData({
                 'type': 'FeatureCollection',
                 'features': textLeftFeatures
             });
-            (map.getSource(`${that.mapId}-grid-text-right-layer`) as any).setData({
+            (map.getSource(`${that.options.mapId}-grid-text-right-layer`) as any).setData({
                 'type': 'FeatureCollection',
                 'features': textRigthFeatures
             });
-            (map.getSource(`${that.mapId}-grid-text-top-layer`) as any).setData({
+            (map.getSource(`${that.options.mapId}-grid-text-top-layer`) as any).setData({
                 'type': 'FeatureCollection',
                 'features': textTopFeatures
             });
-            (map.getSource(`${that.mapId}-grid-text-bottom-layer`) as any).setData({
+            (map.getSource(`${that.options.mapId}-grid-text-bottom-layer`) as any).setData({
                 'type': 'FeatureCollection',
                 'features': textBottomFeatures
             });
@@ -370,7 +384,7 @@ export class GridControl implements mapboxgl.IControl {
         return this.element;
     }
 
-    onRemove(map: mapboxgl.Map): void {
+    onRemove(map: Map): void {
         this.element.remove();
     }
 }
