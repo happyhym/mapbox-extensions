@@ -236,8 +236,6 @@ export default class MeasurePolygon extends MeasureBase {
     private onRightClickHandler = (e: mapboxgl.MapMouseEvent & mapboxgl.EventData) => {
         const coords = this.currentPolygon.coordinates[0];
 
-        console.log(coords);
-
         if (coords.length === 2) {// 只存在第一个点和动态点则删除当前图形，进行下一次绘制
             this.map.off('mousemove', this.onMouseMoveHandler);
             this.map.off('contextmenu', this.onRightClickHandler);
